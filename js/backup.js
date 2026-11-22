@@ -7,7 +7,7 @@
 // - Ersetzen: Alle Daten auf diesem Gerät werden durch das Backup ersetzt.
 
 import * as db from './db.js';
-import { state, load, emitChange, nowISO, updateLocal, RECORD_STORES, ensureV3Defaults } from './data.js';
+import { state, load, emitChange, nowISO, updateLocal } from './data.js';
 import { DEFAULT_SETTINGS } from './defaults.js';
 import { APP_ID, APP_VERSION, BACKUP_FORMAT } from './config.js';
 import { todayISO } from './format.js';
@@ -42,9 +42,7 @@ export async function createBackupFile() {
     exportedAt: nowISO(),
     settings: state.settings,
     categories: state.categories,
-    contacts: state.contacts,
     bookings: state.bookings,
-    ...Object.fromEntries(RECORD_STORES.map((name) => [name, state[name]])),
     tombstones,
   };
   // Datei in Teilen zusammensetzen – spart Arbeitsspeicher bei vielen Fotos
@@ -107,20 +105,13 @@ function sanitize(data) {
       && typeof b.categoryId === 'string';
     if (!ok) { skipped++; continue; }
     bookings.push({
-      ...b, // weitere Felder (Preisliste, Fahrten, Rechnung …) unverändert übernehmen
       id: b.id,
       type: b.type,
       date: b.date,
       amountCents: b.amountCents,
       categoryId: b.categoryId,
       description: str(b.description),
-      payment: ['cash', 'transfer', 'paypal'].includes(b.payment) ? b.payment : null,
       receiptId: typeof b.receiptId === 'string' ? b.receiptId : null,
-      personId: typeof b.personId === 'string' ? b.personId : null,
-      paid: !(b.type === 'income' && b.paid === false),
-      serviceDate: DATE_RE.test(b.serviceDate) ? b.serviceDate : null,
-      km: typeof b.km === 'number' && b.km >= 0 ? b.km : null,
-      kmRateCents: Number.isSafeInteger(b.kmRateCents) ? b.kmRateCents : null,
       createdAt: str(b.createdAt) || nowISO(),
       updatedAt: str(b.updatedAt) || str(b.createdAt) || nowISO(),
     });
@@ -129,64 +120,32 @@ function sanitize(data) {
   const categories = arr(data.categories)
     .filter((c) => c && typeof c.id === 'string' && (c.type === 'income' || c.type === 'expense') && str(c.name))
     .map((c, i) => ({
-      ...c,
       id: c.id,
       key: typeof c.key === 'string' ? c.key : null,
       type: c.type,
       name: c.name,
-      euer: str(c.euer),
-      mileage: !!c.mileage,
-      businessPercent: Number.isFinite(c.businessPercent) && c.businessPercent > 0 && c.businessPercent <= 100 ? c.businessPercent : 100,
       order: Number.isFinite(c.order) ? c.order : i,
       updatedAt: str(c.updatedAt) || nowISO(),
     }));
 
-  const contacts = arr(data.contacts)
-    .filter((c) => c && typeof c.id === 'string' && str(c.name).trim())
-    .map((c) => ({
-      ...c,
-      id: c.id,
-      name: c.name.trim(),
-      dog: str(c.dog).trim(),
-      createdAt: str(c.createdAt) || nowISO(),
-      updatedAt: str(c.updatedAt) || nowISO(),
-    }));
-
-  // Weitere Listen (ab Format 3); fehlen sie (altes Backup), bleiben die lokalen erhalten
-  const records = {};
-  for (const name of RECORD_STORES) {
-    if (!Array.isArray(data[name])) continue;
-    records[name] = data[name]
-      .filter((x) => x && typeof x === 'object' && typeof x.id === 'string')
-      .map((x) => ({ ...x, updatedAt: str(x.updatedAt) || nowISO() }));
-  }
-
   const receipts = arr(data.receipts).filter((r) => r && typeof r.id === 'string' && typeof r.data === 'string');
   const tombstones = arr(data.tombstones).filter((t) => t && typeof t.id === 'string' && typeof t.deletedAt === 'string');
 
+  // Einstellungen: nur bekannte Schlüssel mit passendem Typ übernehmen
   let settings = null;
   if (data.settings && typeof data.settings === 'object') {
     settings = { ...DEFAULT_SETTINGS };
     for (const key of Object.keys(DEFAULT_SETTINGS)) {
       const v = data.settings[key];
-      if (v === undefined) continue;
-      if (key === 'manualRevenue') {
-        if (v && typeof v === 'object' && !Array.isArray(v)) {
-          settings.manualRevenue = Object.fromEntries(Object.entries(v).filter(([y, c]) => /^\d{4}$/.test(y) && Number.isSafeInteger(c)));
-        }
-      } else if (DEFAULT_SETTINGS[key] === null || typeof v === typeof DEFAULT_SETTINGS[key]) {
-        settings[key] = v;
-      }
+      if (v !== undefined && typeof v === typeof DEFAULT_SETTINGS[key]) settings[key] = v;
     }
   }
 
   return {
     exportedAt: str(data.exportedAt),
     format: data.format,
-    records,
     bookings,
     categories,
-    contacts,
     receipts,
     tombstones,
     settings,
@@ -195,6 +154,8 @@ function sanitize(data) {
 }
 
 // ---------- Import: anwenden ----------
+
+const STORES = ['bookings', 'categories', 'receipts', 'tombstones', 'meta'];
 
 export async function applyBackup(backup, mode) {
   // Fotos vorher umwandeln (in der Datenbank-Transaktion darf nicht gewartet werden)
@@ -215,31 +176,20 @@ export async function applyBackup(backup, mode) {
 
   let result;
   if (mode === 'replace') {
-    await db.write(['bookings', 'categories', 'contacts', 'receipts', 'tombstones', 'meta', ...RECORD_STORES], (s) => {
-      for (const [name, list] of Object.entries(backup.records)) {
-        s[name].clear();
-        for (const x of list) s[name].put(x);
-      }
-      s.bookings.clear();
-      s.categories.clear();
-      s.contacts.clear();
-      s.receipts.clear();
-      s.tombstones.clear();
+    await db.write(STORES, (s) => {
+      for (const name of ['bookings', 'categories', 'receipts', 'tombstones']) s[name].clear();
       for (const b of backup.bookings) s.bookings.put(b);
       for (const c of backup.categories) s.categories.put(c);
-      for (const c of backup.contacts) s.contacts.put(c);
       for (const r of receipts) s.receipts.put(r);
       for (const t of backup.tombstones) s.tombstones.put(t);
       if (backup.settings) s.meta.put({ key: 'settings', value: backup.settings });
     });
-    result = { added: backup.bookings.length, updated: 0, removed: 0, total: backup.bookings.length };
+    result = { added: backup.bookings.length, updated: 0, removed: 0 };
   } else {
     result = await merge(backup, receipts);
   }
 
   await load();
-  // Altes Backup ersetzt alles: neue Kategorien/Preisliste wieder ergänzen
-  if (mode === 'replace' && (backup.format || 1) < 3) await ensureV3Defaults();
   emitChange();
   return { ...result, skipped: backup.skipped };
 }
@@ -259,74 +209,47 @@ async function merge(backup, receipts) {
     return !!t && t.deletedAt >= (updatedAt || '');
   };
 
-  const plan = { putB: [], delB: [], putC: [], delC: [], putR: [], delR: [] };
-  let added = 0;
-  let updated = 0;
-  let removed = 0;
-
-  // Buchungen
-  const localB = new Map(state.bookings.map((b) => [b.id, b]));
-  for (const b of backup.bookings) {
-    const local = localB.get(b.id);
-    if (deletedAfter(b.id, b.updatedAt)) continue;
-    if (!local) { plan.putB.push(b); added++; } else if (b.updatedAt > local.updatedAt) { plan.putB.push(b); updated++; }
-  }
-  for (const local of state.bookings) {
-    const incoming = backup.bookings.find((b) => b.id === local.id);
-    const newest = incoming && incoming.updatedAt > local.updatedAt ? incoming : local;
-    if (deletedAfter(local.id, newest.updatedAt)) { plan.delB.push(local.id); removed++; }
-  }
-
-  // Kategorien und Kund:innen: das jeweils Neuere gewinnt
+  /** Eine Liste zusammenführen: das jeweils Neuere gewinnt, Gelöschtes wird gelöscht */
   const mergeList = (localList, incomingList) => {
     const put = [];
     const del = [];
+    let added = 0;
+    let updated = 0;
     const localMap = new Map(localList.map((x) => [x.id, x]));
+    const incomingMap = new Map(incomingList.map((x) => [x.id, x]));
     for (const x of incomingList) {
       const local = localMap.get(x.id);
       if (deletedAfter(x.id, x.updatedAt)) continue;
-      if (!local || x.updatedAt > local.updatedAt) put.push(x);
+      if (!local) { put.push(x); added++; } else if (x.updatedAt > local.updatedAt) { put.push(x); updated++; }
     }
     for (const local of localList) {
-      const incoming = incomingList.find((x) => x.id === local.id);
+      const incoming = incomingMap.get(local.id);
       const newest = incoming && incoming.updatedAt > local.updatedAt ? incoming : local;
       if (deletedAfter(local.id, newest.updatedAt)) del.push(local.id);
     }
-    return { put, del };
+    return { put, del, added, updated, removed: del.length };
   };
+  const bookings = mergeList(state.bookings, backup.bookings);
   const cats = mergeList(state.categories, backup.categories);
-  plan.putC = cats.put;
-  plan.delC = cats.del;
-  const people = mergeList(state.contacts, backup.contacts);
-  const recordPlans = Object.entries(backup.records).map(([name, list]) => [name, mergeList(state[name], list)]);
 
   // Fotos (ändern sich nie – ein neues Foto bekommt eine neue ID)
   const haveR = new Set(localReceiptIds);
-  for (const r of receipts) {
-    if (!haveR.has(r.id) && !tomb.has(r.id)) plan.putR.push(r);
-  }
-  for (const id of localReceiptIds) if (tomb.has(id)) plan.delR.push(id);
+  const putR = receipts.filter((r) => !haveR.has(r.id) && !tomb.has(r.id));
+  const delR = localReceiptIds.filter((id) => tomb.has(id));
 
   // Einstellungen: die neueren gewinnen
   const takeSettings = backup.settings && (backup.settings.updatedAt || '') > (state.settings.updatedAt || '');
 
-  await db.write(['bookings', 'categories', 'contacts', 'receipts', 'tombstones', 'meta', ...RECORD_STORES], (s) => {
-    for (const [name, plan] of recordPlans) {
+  await db.write(STORES, (s) => {
+    for (const [name, plan] of [['bookings', bookings], ['categories', cats]]) {
       for (const x of plan.put) s[name].put(x);
       for (const id of plan.del) s[name].delete(id);
     }
-    for (const c of people.put) s.contacts.put(c);
-    for (const id of people.del) s.contacts.delete(id);
-    for (const b of plan.putB) s.bookings.put(b);
-    for (const id of plan.delB) s.bookings.delete(id);
-    for (const c of plan.putC) s.categories.put(c);
-    for (const id of plan.delC) s.categories.delete(id);
-    for (const r of plan.putR) s.receipts.put(r);
-    for (const id of plan.delR) s.receipts.delete(id);
+    for (const r of putR) s.receipts.put(r);
+    for (const id of delR) s.receipts.delete(id);
     for (const t of newTombs) s.tombstones.put(t);
     if (takeSettings) s.meta.put({ key: 'settings', value: backup.settings });
   });
 
-  const total = state.bookings.length + added - removed;
-  return { added, updated, removed, total };
+  return { added: bookings.added, updated: bookings.updated, removed: bookings.removed };
 }

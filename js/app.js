@@ -3,9 +3,8 @@
 import { load, onChange } from './data.js';
 import { h, toast, applyTheme } from './ui.js';
 import { APP_VERSION, storageKey } from './config.js';
-import { updateBadge } from './badge.js';
-import { preloadLogo } from './logo.js';
-import { openBookingForm, isFormOpen, onFormClosed } from './views/form.js';
+import { openBookingForm } from './views/form.js';
+import { isFormOpen, onFormClosed } from './views/formState.js';
 import * as overview from './views/overview.js';
 import * as bookings from './views/bookings.js';
 import * as report from './views/report.js';
@@ -52,10 +51,8 @@ async function boot() {
   }
 
   render();
-  updateBadge();
-  preloadLogo(); // für PDFs (Auswertung, Rechnungen)
   window.addEventListener('hashchange', () => render());
-  onChange(() => { render({ keepScroll: true }); updateBadge(); });
+  onChange(() => render({ keepScroll: true }));
 
   // Großer Plus-Button: Formular sofort öffnen (ohne Verzögerung, wegen iPhone-Tastatur)
   document.getElementById('fab').addEventListener('click', () => openBookingForm());

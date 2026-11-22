@@ -1,11 +1,11 @@
 // Diagramme für die Auswertung – schlicht, ohne fremde Bibliothek (SVG).
 // - Einnahmen/Ausgaben pro Monat (gruppierte Säulen)
-// - Gewinn im Jahresverlauf, verglichen mit dem Vorjahr (Linien)
+// - Saldo im Jahresverlauf, verglichen mit dem Vorjahr (Linien)
 // Farben kommen aus CSS-Variablen (--chart-income, --chart-expense …),
 // damit hell/dunkel stimmen. Ein Tipp/Hover zeigt die genauen Werte.
 
 import { h } from '../ui.js';
-import { formatMoney, formatProfit, MONTHS } from '../format.js';
+import { formatMoney, formatBalance, MONTHS } from '../format.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const svgEl = (tag, attrs = {}) => {
@@ -68,7 +68,7 @@ function legend(items) {
 
 // ---------- Einnahmen & Ausgaben pro Monat ----------
 
-/** months: 12 × { income, expense, profit } in Cent; upToMonth: letzter Monat mit Daten (0–11) oder 11 */
+/** months: 12 × { income, expense, balance } in Cent */
 export function monthlyChart(months, { year }) {
   const draw = (W, tip) => {
     const H = 190;
@@ -116,7 +116,7 @@ export function monthlyChart(months, { year }) {
         showTip(tip, [
           { key: 'k-income', value: formatMoney(m.income), label: 'Einnahmen' },
           { key: 'k-expense', value: formatMoney(m.expense), label: 'Ausgaben' },
-          { value: formatProfit(m.profit), label: m.profit < 0 ? 'Verlust' : 'Gewinn' },
+          { value: formatBalance(m.balance), label: 'Saldo' },
         ], `${MONTHS[i]} ${year}`);
       };
       shows.push(show);
@@ -138,9 +138,9 @@ export function monthlyChart(months, { year }) {
     h('p', { class: 'chart-note' }, 'Achse in Euro. Tippe auf einen Monat, um seine Werte zu sehen.'));
 }
 
-// ---------- Gewinn im Jahresverlauf (kumuliert) ----------
+// ---------- Saldo im Jahresverlauf (kumuliert) ----------
 
-/** current/previous: 12 Monatswerte (Gewinn in Cent); lastMonth: bis zu welchem Monat das aktuelle Jahr gezeichnet wird */
+/** current/previous: 12 Monatswerte (Saldo in Cent); lastMonth: bis zu welchem Monat das aktuelle Jahr gezeichnet wird */
 export function cumulativeChart({ year, current, previous, lastMonth }) {
   const cum = (arr, upto) => {
     let s = 0;
@@ -189,15 +189,15 @@ export function cumulativeChart({ year, current, previous, lastMonth }) {
     // Fadenkreuz: findet den nächsten Monat
     const cross = svgEl('line', { y1: pad.t, y2: pad.t + ih, class: 'chart-cross', visibility: 'hidden' });
     svg.append(cross);
-    const hitArea = svgEl('rect', { x: pad.l - 10, y: 0, width: iw + 20, height: H, class: 'chart-hit', tabindex: 0, 'aria-label': `Gewinn kumuliert ${year}` });
+    const hitArea = svgEl('rect', { x: pad.l - 10, y: 0, width: iw + 20, height: H, class: 'chart-hit', tabindex: 0, 'aria-label': `Saldo aufsummiert ${year}` });
     const showIndex = (i) => {
       cross.setAttribute('x1', x(i));
       cross.setAttribute('x2', x(i));
       cross.setAttribute('visibility', 'visible');
       const rows = [];
-      if (i < cur.length) rows.push({ key: 'k-current line', value: formatProfit(cur[i]), label: String(year) });
-      if (prev) rows.push({ key: 'k-prev line', value: formatProfit(prev[i]), label: String(year - 1) });
-      showTip(tip, rows, `Gewinn bis Ende ${MONTHS[i]}`);
+      if (i < cur.length) rows.push({ key: 'k-current line', value: formatBalance(cur[i]), label: String(year) });
+      if (prev) rows.push({ key: 'k-prev line', value: formatBalance(prev[i]), label: String(year - 1) });
+      showTip(tip, rows, `Saldo bis Ende ${MONTHS[i]}`);
     };
     const indexAt = (clientX) => {
       const r = svg.getBoundingClientRect();
@@ -215,8 +215,8 @@ export function cumulativeChart({ year, current, previous, lastMonth }) {
 
   return h('div', null,
     prev ? legend([{ key: 'k-current', line: true, label: String(year) }, { key: 'k-prev', line: true, label: `${year - 1} (Vorjahr)` }]) : null,
-    chartShell(`Gewinn im Jahresverlauf ${year}${prev ? ` im Vergleich zu ${year - 1}` : ''}`, draw),
-    h('p', { class: 'chart-note' }, 'Gewinn aufsummiert vom Jahresanfang bis zum jeweiligen Monat. Tippe ins Diagramm für die Werte.'));
+    chartShell(`Saldo im Jahresverlauf ${year}${prev ? ` im Vergleich zu ${year - 1}` : ''}`, draw),
+    h('p', { class: 'chart-note' }, 'Einnahmen minus Ausgaben, aufsummiert vom Jahresanfang bis zum jeweiligen Monat. Tippe ins Diagramm für die Werte.'));
 }
 
 /** Dünner Anteilsbalken (z. B. Anteil einer Kategorie an allen Einnahmen) */

@@ -14,4 +14,4 @@ export const APP_VERSION = '1.0.0';
 export const APP_STAGE = '';
 
 // Format der Backup-Datei. Wird erhöht, wenn sich der Aufbau ändert.
-export const BACKUP_FORMAT = 3; // 2: mit Kund:innen, 3: Preisliste, Strecken, Rechnungen, Gutscheine, Karten, Kurse
+export const BACKUP_FORMAT = 1;
