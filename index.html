@@ -3,23 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Hundeschule</title>
-  <meta name="description" content="Einnahmen und Ausgaben der Hundeschule erfassen – für die Anlage EÜR.">
+  <title>Haushaltsbuch</title>
+  <meta name="description" content="Tägliche Einnahmen und Ausgaben erfassen, Monat und Jahr im Blick – und die Überstunden dazu.">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
   <!-- iPhone: als App vom Home-Bildschirm starten -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Hundeschule">
+  <meta name="apple-mobile-web-app-title" content="Haushalt">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="css/app.css">
   <script>
-    // Gewählte Darstellung (hell/dunkel) sofort anwenden, ohne Aufflackern
-    try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+    // Gewählte Darstellung (hell/dunkel) sofort anwenden, ohne Aufflackern.
+    // Schlüssel mit App-Kennung (siehe js/config.js), weil sich alle Apps unter
+    // schule11.github.io denselben localStorage teilen.
+    try { var t = localStorage.getItem('haushaltsbuch.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
   </script>
   <script type="module" src="js/app.js"></script>
 </head>

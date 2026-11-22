@@ -1,12 +1,17 @@
 // Service Worker: speichert die App-Dateien auf dem Gerät, damit sie auch
-// ohne Internet startet. Deine Buchungen liegen NICHT hier, sondern in der
+// ohne Internet startet. Deine Daten liegen NICHT hier, sondern in der
 // Datenbank (IndexedDB).
 //
 // Bei jeder Änderung an der App: VERSION erhöhen (und in js/config.js),
 // damit Handys die neuen Dateien laden.
 
-const VERSION = '1.8.2';
-const CACHE = `hundeschule-${VERSION}`;
+const VERSION = '1.0.0';
+// Eigener Präfix: Alle Apps unter schule11.github.io teilen sich dieselben Caches.
+// Gleiche Namen würden sich gegenseitig überschreiben oder löschen.
+const PREFIX = 'haushaltsbuch-';
+const CACHE = `${PREFIX}${VERSION}`;
+// Präfix der App, aus der diese entstanden ist (siehe activate)
+const OLD_PREFIX = 'hundeschule-';
 
 const FILES = [
   'index.html',
@@ -77,7 +82,17 @@ self.addEventListener('message', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     for (const key of await caches.keys()) {
-      if (key.startsWith('hundeschule-') && key !== CACHE) await caches.delete(key);
+      // Nur eigene, alte Versionen löschen – nie die Caches anderer Apps
+      if (key.startsWith(PREFIX) && key !== CACHE) await caches.delete(key);
+      // Die erste Kopie dieser App lief noch unter dem Namen der Hundeschule-App und
+      // hat ihre Dateien in deren Cache gelegt. Nur diese eigenen Einträge entfernen
+      // (alles unter der eigenen Adresse); die Dateien der Hundeschule-App bleiben.
+      if (key.startsWith(OLD_PREFIX)) {
+        const cache = await caches.open(key);
+        for (const req of await cache.keys()) {
+          if (req.url.startsWith(self.registration.scope)) await cache.delete(req);
+        }
+      }
     }
     await self.clients.claim();
   })());

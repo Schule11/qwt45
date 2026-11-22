@@ -149,7 +149,7 @@ function openPaymentsPage(onClose) {
           alertDialog({
             title: 'Erlaubnis fehlt',
             text: 'Für die Zahl am App-Symbol braucht die App die Erlaubnis für Mitteilungen '
-              + '(sie verschickt trotzdem keine). Du kannst sie in den iPhone-Einstellungen unter „Mitteilungen“ → „Hundeschule“ erlauben.',
+              + '(sie verschickt trotzdem keine). Du kannst sie in den iPhone-Einstellungen unter „Mitteilungen“ → „Haushalt“ erlauben.',
           });
         } else {
           toast(box.checked ? 'Zahl am App-Symbol an' : 'Zahl am App-Symbol aus');

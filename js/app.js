@@ -2,7 +2,7 @@
 
 import { load, onChange } from './data.js';
 import { h, toast, applyTheme } from './ui.js';
-import { APP_VERSION } from './config.js';
+import { APP_VERSION, storageKey } from './config.js';
 import { updateBadge } from './badge.js';
 import { preloadLogo } from './logo.js';
 import { openBookingForm, isFormOpen, onFormClosed } from './views/form.js';
@@ -62,8 +62,8 @@ async function boot() {
 
   // Gerade erst aktualisiert?
   try {
-    if (sessionStorage.getItem('justUpdated')) {
-      sessionStorage.removeItem('justUpdated');
+    if (sessionStorage.getItem(storageKey('justUpdated'))) {
+      sessionStorage.removeItem(storageKey('justUpdated'));
       toast(`App aktualisiert auf Version ${APP_VERSION}`);
     }
   } catch { /* egal */ }
@@ -83,7 +83,7 @@ function registerServiceWorker() {
     // Erste Installation: nicht neu laden. Nur bei Updates.
     if (!hadController || reloading) return;
     reloading = true;
-    try { sessionStorage.setItem('justUpdated', '1'); } catch { /* egal */ }
+    try { sessionStorage.setItem(storageKey('justUpdated'), '1'); } catch { /* egal */ }
     location.reload();
   });
 

@@ -1,5 +1,7 @@
 // Bausteine für die Oberfläche: Elemente erzeugen, Symbole, Meldungen, Dialoge.
 
+import { storageKey } from './config.js';
+
 const PROPS = new Set(['value', 'checked', 'disabled', 'hidden', 'multiple', 'selected']);
 
 /**
@@ -186,10 +188,11 @@ export function isTouchDevice() {
 // ---------- Hell / Dunkel (gilt nur für dieses Gerät) ----------
 
 const THEME_COLORS = { light: '#f6f5f2', dark: '#121212' };
+const THEME_KEY = storageKey('theme'); // auch in index.html (Darstellung ohne Aufflackern)
 
 export function getTheme() {
   try {
-    const t = localStorage.getItem('theme');
+    const t = localStorage.getItem(THEME_KEY);
     return t === 'light' || t === 'dark' ? t : 'system';
   } catch {
     return 'system';
@@ -198,8 +201,8 @@ export function getTheme() {
 
 export function setTheme(theme) {
   try {
-    if (theme === 'light' || theme === 'dark') localStorage.setItem('theme', theme);
-    else localStorage.removeItem('theme');
+    if (theme === 'light' || theme === 'dark') localStorage.setItem(THEME_KEY, theme);
+    else localStorage.removeItem(THEME_KEY);
   } catch { /* egal */ }
   applyTheme();
 }

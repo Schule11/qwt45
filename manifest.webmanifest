@@ -1,7 +1,8 @@
 {
-  "name": "Hundeschule",
-  "short_name": "Hundeschule",
-  "description": "Einnahmen und Ausgaben der Hundeschule erfassen – für die Anlage EÜR.",
+  "id": "./",
+  "name": "Haushaltsbuch",
+  "short_name": "Haushalt",
+  "description": "Tägliche Einnahmen und Ausgaben erfassen, Monat und Jahr im Blick – und die Überstunden dazu.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

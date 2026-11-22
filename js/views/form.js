@@ -19,6 +19,7 @@ import { PAYMENT_METHODS, productPriceLabel } from '../defaults.js';
 import { parseAmount, centsToInput, todayISO, formatMoney, formatDate, formatKm, normalizeText } from '../format.js';
 import { prepareReceipt } from '../image.js';
 import { openFile } from '../files.js';
+import { storageKey } from '../config.js';
 
 const GWG_HINT_CENTS = 80000; // ab 800 € Hinweis auf mögliche Abschreibung
 
@@ -30,16 +31,16 @@ export function onFormClosed(fn) { closeListeners.add(fn); }
 
 function getLastType() {
   // Standard: Einnahme (das Häufigste nach einer Trainingsstunde)
-  try { return localStorage.getItem('lastType') === 'expense' ? 'expense' : 'income'; } catch { return 'income'; }
+  try { return localStorage.getItem(storageKey('lastType')) === 'expense' ? 'expense' : 'income'; } catch { return 'income'; }
 }
 function setLastType(type) {
-  try { localStorage.setItem('lastType', type); } catch { /* egal */ }
+  try { localStorage.setItem(storageKey('lastType'), type); } catch { /* egal */ }
 }
 function getLastPaid() {
-  try { return localStorage.getItem('lastPaid') !== 'open'; } catch { return true; }
+  try { return localStorage.getItem(storageKey('lastPaid')) !== 'open'; } catch { return true; }
 }
 function setLastPaid(paid) {
-  try { localStorage.setItem('lastPaid', paid ? 'paid' : 'open'); } catch { /* egal */ }
+  try { localStorage.setItem(storageKey('lastPaid'), paid ? 'paid' : 'open'); } catch { /* egal */ }
 }
 
 /**

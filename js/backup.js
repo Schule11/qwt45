@@ -9,7 +9,7 @@
 import * as db from './db.js';
 import { state, load, emitChange, nowISO, updateLocal, RECORD_STORES, ensureV3Defaults } from './data.js';
 import { DEFAULT_SETTINGS } from './defaults.js';
-import { APP_VERSION, BACKUP_FORMAT } from './config.js';
+import { APP_ID, APP_VERSION, BACKUP_FORMAT } from './config.js';
 import { todayISO } from './format.js';
 
 // ---------- Hilfen für Fotos (Binärdaten ↔ Text) ----------
@@ -36,7 +36,7 @@ function base64ToBuffer(b64) {
 export async function createBackupFile() {
   const [receipts, tombstones] = await Promise.all([db.getAll('receipts'), db.getAll('tombstones')]);
   const head = {
-    app: 'hundeschule',
+    app: APP_ID,
     format: BACKUP_FORMAT,
     appVersion: APP_VERSION,
     exportedAt: nowISO(),
@@ -63,7 +63,7 @@ export async function createBackupFile() {
   });
   parts.push(']}');
 
-  const name = `hundeschule-backup-${todayISO()}.json`;
+  const name = `${APP_ID}-backup-${todayISO()}.json`;
   const file = new File(parts, name, { type: 'application/json' });
   return { file, counts: { bookings: state.bookings.length, receipts: receipts.length } };
 }
@@ -83,8 +83,11 @@ export async function readBackupFile(file) {
   } catch {
     throw new Error('Die Datei konnte nicht gelesen werden. Ist es wirklich ein Backup dieser App (.json)?');
   }
-  if (!data || data.app !== 'hundeschule' || typeof data.format !== 'number') {
-    throw new Error('Diese Datei ist kein Backup der Hundeschule-App.');
+  if (data?.app === 'hundeschule') {
+    throw new Error('Das ist ein Backup der Hundeschule-App. Es gehört zu einer anderen App und kann hier nicht eingespielt werden.');
+  }
+  if (!data || data.app !== APP_ID || typeof data.format !== 'number') {
+    throw new Error('Diese Datei ist kein Backup des Haushaltsbuchs.');
   }
   if (data.format > BACKUP_FORMAT) {
     throw new Error('Das Backup stammt von einer neueren App-Version. Bitte zuerst die App aktualisieren.');

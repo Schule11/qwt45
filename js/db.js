@@ -2,7 +2,11 @@
 // bereitstellt. Hier wird nur geöffnet, gelesen und geschrieben; was die Daten
 // bedeuten, steht in data.js.
 
-const DB_NAME = 'hundeschule';
+import { APP_ID } from './config.js';
+
+// Eigener Name: Die Datenbank gehört zur Adresse (schule11.github.io), nicht zur App.
+// Mit demselben Namen würden sich zwei Apps dort dieselben Daten teilen.
+const DB_NAME = APP_ID;
 const DB_VERSION = 3;
 
 let dbPromise = null;

@@ -65,7 +65,7 @@ export function bookingsCsv(year) {
   }
   rows.push([]);
   rows.push(['', '', '', '', '', textCell('Summe'), '', moneyCell(r.totals.income), moneyCell(r.totals.expense), '', '', '', '', '', '', '']);
-  return csvFile(rows, `hundeschule-buchungen-${year}.csv`);
+  return csvFile(rows, `haushaltsbuch-buchungen-${year}.csv`);
 }
 
 /** Summen pro EÜR-Posten, pro Kategorie und pro Monat */
@@ -96,7 +96,7 @@ export function summaryCsv(year) {
     rows.push(['Kund:in', 'Einnahmen (EUR)', 'Anzahl Zahlungen'].map(textCell));
     for (const p of r.persons) rows.push([textCell(p.label), moneyCell(p.cents), String(p.count)]);
   }
-  return csvFile(rows, `hundeschule-summen-${year}.csv`);
+  return csvFile(rows, `haushaltsbuch-summen-${year}.csv`);
 }
 
 // ---------- PDF ----------
@@ -277,7 +277,7 @@ export function reportPdf(year) {
   // --- Hinweis am Ende ---
   ensure(40);
   y += 30;
-  pdf.text('Erstellt mit der Hundeschule-App. Ohne Gewähr – bitte die Zuordnung zu den Posten der Anlage EÜR vor der Abgabe prüfen.', M, y, { size: 8, color: GREY, maxWidth: R - M });
+  pdf.text('Erstellt mit dem Haushaltsbuch. Ohne Gewähr – bitte die Zuordnung zu den Posten der Anlage EÜR vor der Abgabe prüfen.', M, y, { size: 8, color: GREY, maxWidth: R - M });
 
   // --- Fußzeile auf jeder Seite ---
   const total = pdf.pages.length;
@@ -289,5 +289,5 @@ export function reportPdf(year) {
   }
 
   const blob = pdf.toBlob({ title: `Einnahmenüberschussrechnung ${year}`, author: business });
-  return new File([blob], `hundeschule-euer-${year}.pdf`, { type: 'application/pdf' });
+  return new File([blob], `haushaltsbuch-euer-${year}.pdf`, { type: 'application/pdf' });
 }

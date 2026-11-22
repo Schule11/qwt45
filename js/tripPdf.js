@@ -108,5 +108,5 @@ export function tripPdf(year) {
     pdf.text(`${name} · Fahrtenliste ${year}`, M, pdf.H - 28, { size: 8, color: GREY });
     pdf.text(`Seite ${i + 1} von ${total}`, R, pdf.H - 28, { size: 8, color: GREY, align: 'right' });
   }
-  return new File([pdf.toBlob({ title: `Fahrtenliste ${year}`, author: name })], `hundeschule-fahrten-${year}.pdf`, { type: 'application/pdf' });
+  return new File([pdf.toBlob({ title: `Fahrtenliste ${year}`, author: name })], `haushaltsbuch-fahrten-${year}.pdf`, { type: 'application/pdf' });
 }
