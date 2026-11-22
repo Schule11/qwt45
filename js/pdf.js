@@ -183,7 +183,7 @@ export class Pdf {
     const d = new Date();
     const p2 = (n) => String(n).padStart(2, '0');
     const date = `D:${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
-    obj(infoObj, `<< /Title (${escapeCodes(toCodes(title))}) /Author (${escapeCodes(toCodes(author))}) /Producer (Hundeschule-App) /CreationDate (${date}) >>`);
+    obj(infoObj, `<< /Title (${escapeCodes(toCodes(title))}) /Author (${escapeCodes(toCodes(author))}) /Producer (Haushaltsbuch) /CreationDate (${date}) >>`);
 
     const xrefPos = pos;
     const size = infoObj + 1;

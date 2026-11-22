@@ -1,133 +1,161 @@
-// Bildschirm "Auswertung": Jahressummen für die Anlage EÜR, CSV- und PDF-Export.
+// Bildschirm "Auswertung": Einnahmen, Ausgaben und Saldo für einen Monat oder ein Jahr,
+// mit Kategorien, Diagrammen und Export (CSV, PDF).
 
 import { h, mount, icon, toast, alertDialog } from '../ui.js';
-import { state, bookingYears } from '../data.js';
-import { formatMoney, formatSigned, formatProfit, formatKm, MONTHS } from '../format.js';
-import { yearReport } from '../yearReport.js';
-import { bookingsCsv, summaryCsv, reportPdf, preloadLogo } from '../exports.js';
+import { bookingYears, bookingMonths } from '../data.js';
+import { formatMoney, formatSigned, formatBalance, monthLabel, todayISO, MONTHS } from '../format.js';
+import { yearReport, monthReport } from '../yearReport.js';
+import { bookingsCsv, summaryCsv, reportPdf } from '../exports.js';
 import { saveFile, prefersShare } from '../files.js';
-import { statBlock, yearSelect, pageHeader } from './components.js';
+import { statBlock, yearSelect, selectField, pageHeader } from './components.js';
 import { showBookings } from './bookings.js';
 import { monthlyChart, cumulativeChart, shareBar } from './charts.js';
-import { closingCard } from './closing.js';
-import { markExported } from '../closing.js';
-import { tripPdf, tripsOfYear } from '../tripPdf.js';
 
-let selectedYear = defaultYear();
-
-/** Januar bis Mai: meist wird gerade die Steuererklärung fürs Vorjahr gemacht */
-function defaultYear() {
-  const now = new Date();
-  const prev = now.getFullYear() - 1;
-  if (now.getMonth() <= 4 && state.bookings.some((b) => b.date.startsWith(String(prev)))) return prev;
-  return now.getFullYear();
-}
+// Auswahl bleibt erhalten, solange die App offen ist
+const view = {
+  mode: 'month', // 'month' | 'year'
+  month: todayISO().slice(0, 7),
+  year: new Date().getFullYear(),
+};
 
 export function render(root) {
-  preloadLogo();
-  const years = bookingYears();
-  if (!years.includes(selectedYear)) selectedYear = years[0];
-  const r = yearReport(selectedYear);
   const rerender = () => { root.replaceChildren(); render(root); };
+
+  const switcher = h('div', { class: 'segmented period-switch', role: 'group', 'aria-label': 'Zeitraum' },
+    [['month', 'Monat'], ['year', 'Jahr']].map(([value, label]) => h('button', {
+      type: 'button',
+      'aria-pressed': String(view.mode === value),
+      onclick: () => { view.mode = value; rerender(); },
+    }, label)));
+
+  mount(root, pageHeader('Auswertung'), switcher);
+  if (view.mode === 'month') renderMonth(root, rerender);
+  else renderYear(root, rerender);
+}
+
+/** Kategorien mit Anteil (antippen = Buchungen dieser Kategorie zeigen) */
+function categoryCard(list, total, filter) {
+  return h('section', { class: 'card card-list' },
+    list.map((c) => {
+      const pct = total > 0 ? Math.round((c.cents / total) * 100) : 0;
+      return h('button', {
+        type: 'button',
+        class: 'report-row report-link',
+        onclick: () => showBookings({ ...filter, category: c.id || 'all' }),
+      },
+      h('div', { class: 'report-main' },
+        h('div', { class: 'report-name' }, c.name),
+        h('div', { class: 'report-sub' }, `${c.count} ${c.count === 1 ? 'Buchung' : 'Buchungen'} · ${pct} %`),
+        list.length > 1 ? shareBar(c.cents, total, c.type) : null),
+      h('div', { class: `report-amt ${c.type === 'income' ? 'pos' : 'neg'}` }, formatSigned(c.cents, c.type)));
+    }));
+}
+
+function categorySections(r, filter) {
+  return [
+    r.categories.expense.length
+      ? [h('h2', { class: 'section-title' }, 'Ausgaben nach Kategorie'), categoryCard(r.categories.expense, r.totals.expense, filter)]
+      : null,
+    r.categories.income.length
+      ? [h('h2', { class: 'section-title' }, 'Einnahmen nach Kategorie'), categoryCard(r.categories.income, r.totals.income, filter)]
+      : null,
+  ];
+}
+
+// ---------- Monat ----------
+
+function renderMonth(root, rerender) {
+  const months = bookingMonths(todayISO().slice(0, 7));
+  if (!months.includes(view.month)) view.month = months[0];
+  const r = monthReport(view.month);
 
   const head = h('section', { class: 'card' },
     h('div', { class: 'card-head' },
       h('h2', { class: 'card-title' }, 'Ergebnis'),
-      h('div', { style: 'width: 130px' },
-        yearSelect(years, selectedYear, (v) => { selectedYear = Number(v); rerender(); }))),
-    statBlock(r.totals, { income: 'Betriebseinnahmen', expense: 'Betriebsausgaben' }));
-
-  // Hinweis: offene Einnahmen sind nicht enthalten
-  const openNote = r.open.count
-    ? h('button', {
-      type: 'button',
-      class: 'notice notice-button',
-      onclick: () => showBookings({ type: 'open' }),
-    },
-    h('strong', null, `${r.open.count} offene ${r.open.count === 1 ? 'Zahlung' : 'Zahlungen'} (${formatMoney(r.open.cents)}) nicht enthalten`),
-    h('span', null, 'Sie zählen erst, wenn das Geld eingegangen ist – und zwar im Jahr der Zahlung. Antippen zum Anzeigen.'))
-    : null;
+      h('div', { class: 'head-select' },
+        selectField(months.map((m) => [m, monthLabel(m)]), view.month, (v) => { view.month = v; rerender(); }, { label: 'Monat' }))),
+    statBlock(r.totals));
 
   if (!r.bookings.length) {
-    mount(root,
-      pageHeader('Auswertung'),
-      head,
-      openNote,
-      h('div', { class: 'empty' },
-        h('strong', null, `Keine Buchungen in ${selectedYear}`),
-        'Sobald du Buchungen erfasst hast, siehst du hier die Summen für die Anlage EÜR.'));
+    mount(root, head, h('div', { class: 'empty' },
+      h('strong', null, `Keine Buchungen im ${monthLabel(view.month)}`),
+      'Sobald du Einnahmen oder Ausgaben erfasst hast, siehst du hier, wohin das Geld geht.'));
     return;
   }
 
-  // --- Anlage EÜR ---
-  const euer = h('section', { class: 'card' },
-    h('p', { class: 'hint', style: 'margin-top: 0' },
-      'Diese Bruttobeträge überträgst du in die Anlage EÜR. Die Posten heißen in ELSTER so wie hier (Zeilennummern ändern sich jährlich).'),
-    r.posten.map((p) => h('div', { class: 'report-row' },
-      h('div', { class: 'report-main' },
-        h('div', { class: 'report-name' }, p.name),
-        h('div', { class: 'report-sub' }, p.categories.join(', '))),
-      h('div', { class: `report-amt ${p.type === 'income' ? 'pos' : ''}` }, formatMoney(p.cents)))),
-    h('div', { class: 'stat total' },
-      h('span', { class: 'stat-label' }, r.totals.profit < 0 ? 'Verlust' : 'Gewinn'),
-      h('span', { class: `stat-value ${r.totals.profit < 0 ? 'neg' : ''}` }, formatProfit(r.totals.profit))));
+  mount(root,
+    head,
+    categorySections(r, { month: view.month }),
+    h('p', { style: 'text-align:center; margin: 8px 0 0' },
+      h('button', { type: 'button', class: 'btn-text', onclick: () => showBookings({ month: view.month }) },
+        `Alle ${r.bookings.length} Buchungen im ${monthLabel(view.month)}`)),
+  );
+}
 
-  // --- Kategorien (antippen = Buchungen dieser Kategorie zeigen) ---
-  const sharePercent = (cents, type) => {
-    const total = type === 'income' ? r.totals.income : r.totals.expense;
-    return total > 0 ? Math.round((cents / total) * 100) : 0;
+// ---------- Jahr ----------
+
+function renderYear(root, rerender) {
+  const years = bookingYears();
+  if (!years.includes(view.year)) view.year = years[0];
+  const r = yearReport(view.year);
+
+  const head = h('section', { class: 'card' },
+    h('div', { class: 'card-head' },
+      h('h2', { class: 'card-title' }, 'Ergebnis'),
+      h('div', { class: 'head-select' },
+        yearSelect(years, view.year, (v) => { view.year = Number(v); rerender(); }))),
+    statBlock(r.totals));
+
+  if (!r.bookings.length) {
+    mount(root, head, h('div', { class: 'empty' },
+      h('strong', null, `Keine Buchungen in ${view.year}`),
+      'Sobald du Einnahmen oder Ausgaben erfasst hast, siehst du hier die Summen des Jahres.'));
+    return;
+  }
+
+  // --- Monate (Monat antippen = Auswertung dieses Monats) ---
+  const openMonth = (i) => {
+    view.mode = 'month';
+    view.month = `${view.year}-${String(i + 1).padStart(2, '0')}`;
+    rerender();
+    window.scrollTo(0, 0);
   };
-  const catCard = (list) => h('section', { class: 'card card-list' },
-    list.map((c) => h('button', {
-      type: 'button',
-      class: 'report-row report-link',
-      onclick: () => showBookings({ year: String(selectedYear), category: c.id || 'all' }),
-    },
-    h('div', { class: 'report-main' },
-      h('div', { class: 'report-name' }, c.name),
-      h('div', { class: 'report-sub' }, `${c.count} ${c.count === 1 ? 'Buchung' : 'Buchungen'}${c.km ? ` · ${formatKm(c.km)} km` : ''}`
-        + ` · ${sharePercent(c.cents, c.type)} %`),
-      list.length > 1 ? shareBar(c.cents, c.type === 'income' ? r.totals.income : r.totals.expense, c.type) : null),
-    h('div', { class: `report-amt ${c.type === 'income' ? 'pos' : 'neg'}` }, formatSigned(c.cents, c.type)))));
-
-  // --- Monate ---
-  const monthRows = r.months
-    .map((m, i) => ({ ...m, name: MONTHS[i].slice(0, 3) }))
-    .filter((m) => m.count);
   const monthTable = h('section', { class: 'card' },
     h('div', { class: 'month-table' },
       h('span', { class: 'th' }, 'Monat'),
       h('span', { class: 'th' }, 'Einnahmen'),
       h('span', { class: 'th' }, 'Ausgaben'),
-      h('span', { class: 'th' }, 'Ergebnis'),
-      monthRows.map((m) => [
-        h('span', null, m.name),
+      h('span', { class: 'th' }, 'Saldo'),
+      r.months.map((m, i) => (m.count ? [
+        h('button', { type: 'button', class: 'month-link', 'aria-label': `Auswertung ${MONTHS[i]} ${view.year}`, onclick: () => openMonth(i) },
+          MONTHS[i].slice(0, 3)),
         h('span', { class: 'pos' }, m.income ? formatMoney(m.income) : '–'),
         h('span', { class: 'neg' }, m.expense ? formatMoney(m.expense) : '–'),
-        h('span', { class: m.profit < 0 ? 'neg' : '' }, formatProfit(m.profit)),
-      ])));
+        h('span', { class: m.balance < 0 ? 'neg' : '' }, formatBalance(m.balance)),
+      ] : null))),
+    h('p', { class: 'hint', style: 'margin-bottom: 0' }, 'Tippe auf einen Monat für seine Kategorien.'));
 
   // --- Diagramme ---
   const now = new Date();
-  const prevReport = yearReport(selectedYear - 1);
-  const lastMonth = selectedYear === now.getFullYear() ? now.getMonth() : selectedYear > now.getFullYear() ? 0 : 11;
-  const chartCard = h('section', { class: 'card' }, monthlyChart(r.months, { year: selectedYear }));
+  const prevReport = yearReport(view.year - 1);
+  const lastMonth = view.year === now.getFullYear() ? now.getMonth() : view.year > now.getFullYear() ? 0 : 11;
+  const chartCard = h('section', { class: 'card' }, monthlyChart(r.months, { year: view.year }));
   const compareCard = h('section', { class: 'card' }, cumulativeChart({
-    year: selectedYear,
-    current: r.months.map((m) => m.profit),
-    previous: prevReport.bookings.length ? prevReport.months.map((m) => m.profit) : null,
+    year: view.year,
+    current: r.months.map((m) => m.balance),
+    previous: prevReport.bookings.length ? prevReport.months.map((m) => m.balance) : null,
     lastMonth,
   }));
 
   // --- Export ---
-  const exportBtn = (label, iconName, make, primary = false, after = null) => h('button', {
+  const exportBtn = (label, iconName, make, primary = false) => h('button', {
     type: 'button',
     class: `btn block${primary ? ' primary' : ' btn-small'}`,
     onclick: () => {
       // Datei sofort im Tipp erzeugen und weitergeben (wichtig fürs iPhone)
       let file;
       try {
-        file = make(selectedYear);
+        file = make(view.year);
       } catch (err) {
         console.error(err);
         alertDialog({ title: 'Export fehlgeschlagen', text: err.message || String(err) });
@@ -135,45 +163,24 @@ export function render(root) {
       }
       const share = prefersShare(file);
       saveFile(file, (ok) => { if (ok && !share) toast(`${file.name} heruntergeladen`); });
-      after?.();
     },
   }, iconName ? icon(iconName) : null, label);
-  const hasTrips = tripsOfYear(selectedYear).length > 0;
 
   mount(root,
-    pageHeader('Auswertung'),
     head,
-    openNote,
-    closingCard(selectedYear),
+    h('h2', { class: 'section-title' }, 'Monate'),
+    chartCard,
+    monthTable,
+    h('h2', { class: 'section-title' }, prevReport.bookings.length ? 'Saldo im Vergleich zum Vorjahr' : 'Saldo im Jahresverlauf'),
+    compareCard,
+    categorySections(r, { year: String(view.year) }),
+    h('h2', { class: 'section-title' }, 'Export'),
     h('section', { class: 'card export-card', 'aria-label': 'Export' },
-      exportBtn('PDF erstellen', 'download', reportPdf, true, () => markExported(selectedYear)),
-      hasTrips ? h('div', { style: 'margin-top: 8px' }, exportBtn('Fahrtenliste (PDF)', null, tripPdf)) : null,
+      exportBtn('PDF erstellen', 'download', reportPdf, true),
       h('div', { class: 'btn-pair' },
         exportBtn('Buchungen (CSV)', null, bookingsCsv),
         exportBtn('Summen (CSV)', null, summaryCsv)),
       h('p', { class: 'hint', style: 'margin-bottom: 0' },
-        `PDF: Jahresübersicht mit allen Buchungen – zum Ablegen oder für die Steuerberatung.${hasTrips ? ' Fahrtenliste: alle Fahrten mit Ziel, Zweck und km.' : ''} CSV: für Excel oder Numbers.`)),
-    h('h2', { class: 'section-title' }, 'Für die Anlage EÜR'),
-    euer,
-    h('h2', { class: 'section-title' }, 'Monate'),
-    chartCard,
-    monthTable,
-    h('h2', { class: 'section-title' }, prevReport.bookings.length ? 'Gewinn im Vergleich zum Vorjahr' : 'Gewinn im Jahresverlauf'),
-    compareCard,
-    r.categories.income.length ? [h('h2', { class: 'section-title' }, 'Einnahmen nach Kategorie'), catCard(r.categories.income)] : null,
-    r.categories.expense.length ? [h('h2', { class: 'section-title' }, 'Ausgaben nach Kategorie'), catCard(r.categories.expense)] : null,
-    r.persons.length ? [
-      h('h2', { class: 'section-title' }, 'Einnahmen nach Kund:in'),
-      h('section', { class: 'card card-list' },
-        r.persons.map((p) => h('button', {
-          type: 'button',
-          class: 'report-row report-link',
-          onclick: () => showBookings({ year: String(selectedYear), type: 'income', person: p.id }),
-        },
-        h('div', { class: 'report-main' },
-          h('div', { class: 'report-name' }, p.label),
-          h('div', { class: 'report-sub' }, `${p.count} ${p.count === 1 ? 'Zahlung' : 'Zahlungen'}`)),
-        h('div', { class: 'report-amt pos' }, formatSigned(p.cents, 'income'))))),
-    ] : null,
+        'PDF: Jahresübersicht mit allen Buchungen – zum Ablegen oder Ausdrucken. CSV: für Excel oder Numbers.')),
   );
 }

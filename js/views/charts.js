@@ -1,11 +1,11 @@
 // Diagramme für die Auswertung – schlicht, ohne fremde Bibliothek (SVG).
 // - Einnahmen/Ausgaben pro Monat (gruppierte Säulen)
-// - Gewinn im Jahresverlauf, verglichen mit dem Vorjahr (Linien)
+// - Saldo im Jahresverlauf, verglichen mit dem Vorjahr (Linien)
 // Farben kommen aus CSS-Variablen (--chart-income, --chart-expense …),
 // damit hell/dunkel stimmen. Ein Tipp/Hover zeigt die genauen Werte.
 
 import { h } from '../ui.js';
-import { formatMoney, formatProfit, MONTHS } from '../format.js';
+import { formatMoney, formatBalance, MONTHS } from '../format.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const svgEl = (tag, attrs = {}) => {
@@ -68,7 +68,7 @@ function legend(items) {
 
 // ---------- Einnahmen & Ausgaben pro Monat ----------
 
-/** months: 12 × { income, expense, profit } in Cent; upToMonth: letzter Monat mit Daten (0–11) oder 11 */
+/** months: 12 × { income, expense, balance } in Cent */
 export function monthlyChart(months, { year }) {
   const draw = (W, tip) => {
     const H = 190;
@@ -116,7 +116,7 @@ export function monthlyChart(months, { year }) {
         showTip(tip, [
           { key: 'k-income', value: formatMoney(m.income), label: 'Einnahmen' },
           { key: 'k-expense', value: formatMoney(m.expense), label: 'Ausgaben' },
-          { value: formatProfit(m.profit), label: m.profit < 0 ? 'Verlust' : 'Gewinn' },
+          { value: formatBalance(m.balance), label: 'Saldo' },
         ], `${MONTHS[i]} ${year}`);
       };
       shows.push(show);
@@ -138,9 +138,9 @@ export function monthlyChart(months, { year }) {
     h('p', { class: 'chart-note' }, 'Achse in Euro. Tippe auf einen Monat, um seine Werte zu sehen.'));
 }
 
-// ---------- Gewinn im Jahresverlauf (kumuliert) ----------
+// ---------- Saldo im Jahresverlauf (kumuliert) ----------
 
-/** current/previous: 12 Monatswerte (Gewinn in Cent); lastMonth: bis zu welchem Monat das aktuelle Jahr gezeichnet wird */
+/** current/previous: 12 Monatswerte (Saldo in Cent); lastMonth: bis zu welchem Monat das aktuelle Jahr gezeichnet wird */
 export function cumulativeChart({ year, current, previous, lastMonth }) {
   const cum = (arr, upto) => {
     let s = 0;
@@ -189,15 +189,15 @@ export function cumulativeChart({ year, current, previous, lastMonth }) {
     // Fadenkreuz: findet den nächsten Monat
     const cross = svgEl('line', { y1: pad.t, y2: pad.t + ih, class: 'chart-cross', visibility: 'hidden' });
     svg.append(cross);
-    const hitArea = svgEl('rect', { x: pad.l - 10, y: 0, width: iw + 20, height: H, class: 'chart-hit', tabindex: 0, 'aria-label': `Gewinn kumuliert ${year}` });
+    const hitArea = svgEl('rect', { x: pad.l - 10, y: 0, width: iw + 20, height: H, class: 'chart-hit', tabindex: 0, 'aria-label': `Saldo aufsummiert ${year}` });
     const showIndex = (i) => {
       cross.setAttribute('x1', x(i));
       cross.setAttribute('x2', x(i));
       cross.setAttribute('visibility', 'visible');
       const rows = [];
-      if (i < cur.length) rows.push({ key: 'k-current line', value: formatProfit(cur[i]), label: String(year) });
-      if (prev) rows.push({ key: 'k-prev line', value: formatProfit(prev[i]), label: String(year - 1) });
-      showTip(tip, rows, `Gewinn bis Ende ${MONTHS[i]}`);
+      if (i < cur.length) rows.push({ key: 'k-current line', value: formatBalance(cur[i]), label: String(year) });
+      if (prev) rows.push({ key: 'k-prev line', value: formatBalance(prev[i]), label: String(year - 1) });
+      showTip(tip, rows, `Saldo bis Ende ${MONTHS[i]}`);
     };
     const indexAt = (clientX) => {
       const r = svg.getBoundingClientRect();
@@ -215,8 +215,86 @@ export function cumulativeChart({ year, current, previous, lastMonth }) {
 
   return h('div', null,
     prev ? legend([{ key: 'k-current', line: true, label: String(year) }, { key: 'k-prev', line: true, label: `${year - 1} (Vorjahr)` }]) : null,
-    chartShell(`Gewinn im Jahresverlauf ${year}${prev ? ` im Vergleich zu ${year - 1}` : ''}`, draw),
-    h('p', { class: 'chart-note' }, 'Gewinn aufsummiert vom Jahresanfang bis zum jeweiligen Monat. Tippe ins Diagramm für die Werte.'));
+    chartShell(`Saldo im Jahresverlauf ${year}${prev ? ` im Vergleich zu ${year - 1}` : ''}`, draw),
+    h('p', { class: 'chart-note' }, 'Einnahmen minus Ausgaben, aufsummiert vom Jahresanfang bis zum jeweiligen Monat. Tippe ins Diagramm für die Werte.'));
+}
+
+// ---------- Überstunden pro Monat ----------
+
+/**
+ * Säulen nach oben (Überstunden) oder unten (weniger gearbeitet als ausbezahlt).
+ * rows: erfasste Monate des Jahres [{ month, diff, balance, rec }]; fmt: Minuten → Text
+ */
+export function hoursChart(rows, { year, fmt }) {
+  const byMonth = new Map(rows.map((r) => [Number(r.month.slice(5)) - 1, r]));
+  const draw = (W, tip) => {
+    const H = 170;
+    const pad = { l: 40, r: 6, t: 10, b: 24 };
+    const iw = W - pad.l - pad.r;
+    const ih = H - pad.t - pad.b;
+    const vals = rows.map((r) => r.diff / 60);
+    let lo = Math.min(0, ...vals);
+    let hi = Math.max(0, ...vals);
+    if (hi === lo) hi = lo + 10;
+    const step = niceStep(hi - lo, 3);
+    lo = Math.floor(lo / step) * step;
+    hi = Math.ceil(hi / step) * step;
+    const y = (v) => pad.t + ih - ((v - lo) / (hi - lo)) * ih;
+    const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', 'aria-hidden': 'true' });
+    for (let v = lo; v <= hi + 1e-9; v += step) {
+      svg.append(svgEl('line', { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), class: Math.abs(v) < 1e-9 ? 'chart-base' : 'chart-grid' }));
+      const t = svgEl('text', { x: pad.l - 6, y: y(v) + 4, 'text-anchor': 'end', class: 'chart-tick' });
+      t.textContent = num.format(v);
+      svg.append(t);
+    }
+    const gw = iw / 12;
+    const hl = svgEl('rect', { x: pad.l, y: pad.t, width: gw, height: ih + pad.b, rx: 6, class: 'chart-hl' });
+    svg.append(hl);
+    const bw = Math.min(18, gw - 8);
+    const shows = [];
+    for (let i = 0; i < 12; i += 1) {
+      const gx = pad.l + i * gw;
+      const cx = gx + gw / 2;
+      const r = byMonth.get(i);
+      if (r && r.diff) {
+        const v = r.diff / 60;
+        const top = y(Math.max(0, v));
+        const hgt = Math.abs(y(v) - y(0));
+        const d = v > 0 ? barPath(cx - bw / 2, top, bw, hgt) : `M${cx - bw / 2},${y(0)} H${cx + bw / 2} V${y(0) + hgt} H${cx - bw / 2} Z`;
+        svg.append(svgEl('path', { d, class: v > 0 ? 'bar-plus' : 'bar-minus' }));
+      }
+      const lbl = svgEl('text', { x: cx, y: H - 7, 'text-anchor': 'middle', class: 'chart-tick' });
+      lbl.textContent = W < 460 ? MONTHS[i][0] : MONTHS[i].slice(0, 3);
+      svg.append(lbl);
+      const hit = svgEl('rect', {
+        x: gx, y: pad.t, width: gw, height: ih + pad.b, class: 'chart-hit', tabindex: 0,
+        'aria-label': r ? `${MONTHS[i]} ${year}: ${fmt(r.diff, true)}, Stand ${fmt(r.balance, true)}` : `${MONTHS[i]} ${year}: nicht erfasst`,
+      });
+      const show = () => {
+        hl.setAttribute('x', gx);
+        if (!r) { showTip(tip, [{ value: 'nicht erfasst', label: '' }], `${MONTHS[i]} ${year}`); return; }
+        showTip(tip, [
+          { key: r.diff < 0 ? 'k-minus' : 'k-plus', value: fmt(r.diff, true), label: 'Überstunden' },
+          { value: fmt(r.rec.workedMinutes), label: 'gearbeitet' },
+          { value: fmt(r.rec.paidMinutes), label: 'ausbezahlt' },
+          { value: fmt(r.balance, true), label: 'Stand' },
+        ], `${MONTHS[i]} ${year}`);
+      };
+      shows.push(show);
+      hit.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(); });
+      hit.addEventListener('click', () => { selected = i; show(); });
+      hit.addEventListener('focus', show);
+      svg.append(hit);
+    }
+    svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') shows[selected](); });
+    shows[selected]();
+    return svg;
+  };
+  let selected = rows.length ? Number(rows[rows.length - 1].month.slice(5)) - 1 : 0;
+  return h('div', null,
+    legend([{ key: 'k-plus', label: 'mehr gearbeitet' }, { key: 'k-minus', label: 'weniger gearbeitet' }]),
+    chartShell(`Überstunden pro Monat ${year}`, draw),
+    h('p', { class: 'chart-note' }, 'Achse in Stunden. Tippe auf einen Monat, um seine Werte zu sehen.'));
 }
 
 /** Dünner Anteilsbalken (z. B. Anteil einer Kategorie an allen Einnahmen) */

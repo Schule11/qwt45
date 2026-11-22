@@ -2,14 +2,18 @@
 // bereitstellt. Hier wird nur geöffnet, gelesen und geschrieben; was die Daten
 // bedeuten, steht in data.js.
 
-const DB_NAME = 'hundeschule';
-const DB_VERSION = 3;
+import { APP_ID } from './config.js';
+
+// Eigener Name: Die Datenbank gehört zur Adresse (schule11.github.io), nicht zur App.
+// Mit demselben Namen würden sich zwei Apps dort dieselben Daten teilen.
+const DB_NAME = APP_ID;
+const DB_VERSION = 1;
 
 let dbPromise = null;
 
 /**
- * Datenbank-Aufbau. Für neue Bereiche (z. B. Rechnungen) die Version oben
- * erhöhen und hier einen weiteren Block ergänzen – bestehende Daten bleiben.
+ * Datenbank-Aufbau. Für neue Bereiche die Version oben erhöhen und hier
+ * einen weiteren Block ergänzen – bestehende Daten bleiben.
  */
 function upgrade(db, oldVersion) {
   if (oldVersion < 1) {
@@ -18,19 +22,9 @@ function upgrade(db, oldVersion) {
     db.createObjectStore('receipts', { keyPath: 'id' });   // Belegfotos
     db.createObjectStore('tombstones', { keyPath: 'id' }); // Merkzettel für Gelöschtes (fürs Zusammenführen)
     db.createObjectStore('meta', { keyPath: 'key' });      // Einstellungen u. Ä.
+    db.createObjectStore('hours', { keyPath: 'id' });      // Überstunden je Monat
   }
-  if (oldVersion < 2) {
-    db.createObjectStore('contacts', { keyPath: 'id' });   // Kund:innen
-  }
-  if (oldVersion < 3) {
-    db.createObjectStore('products', { keyPath: 'id' }); // Preisliste
-    db.createObjectStore('routes', { keyPath: 'id' });   // häufige Strecken
-    db.createObjectStore('invoices', { keyPath: 'id' }); // Rechnungen & Quittungen
-    db.createObjectStore('vouchers', { keyPath: 'id' }); // Gutscheine
-    db.createObjectStore('cards', { keyPath: 'id' });    // 10er-Karten
-    db.createObjectStore('courses', { keyPath: 'id' });  // Gruppenkurse
-  }
-  // Für spätere Erweiterungen: if (oldVersion < 4) { ... }
+  // Für spätere Erweiterungen: if (oldVersion < 2) { ... }
 }
 
 export function openDB() {
