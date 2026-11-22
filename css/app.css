@@ -12,10 +12,14 @@
   --text: #1c1b19;
   --muted: #6b6862;
 
-  /* Akzent: Blau (wie das App-Symbol); Schrift darauf weiß */
-  --accent: #2b5fd9;
+  /* Akzent: Verlauf Blau → Lila (wie das App-Symbol); Schrift darauf weiß.
+     --accent ist die feste Farbe dazwischen (gewählter Tab, Auswahl, Rahmen),
+     --accent-fill der Verlauf für +-Knopf, Hauptknöpfe und ✓. */
+  --accent: #5b45e6;
+  --accent-fill: linear-gradient(135deg, #2563eb, #7c3aed);
   --on-accent: #ffffff;
-  --accent-ink: #1f4bb3;   /* Blau für Text/Links: dunkler, damit gut lesbar */
+  --accent-ink: #4a33cf;   /* für Text/Links: dunkler, damit gut lesbar */
+  --kpi-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%234a33cf' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
 
   --income: #157a46;
   --income-fill: #157a46;
@@ -33,10 +37,10 @@
   /* Diagramme (Farben geprüft auf Farbsehschwächen) */
   --chart-income: #0f6b3c;
   --chart-expense: #f2949e;
-  --chart-current: #2b5fd9;
+  --chart-current: #5b45e6;
   --chart-prev: #9b978f;
   --chart-grid: #ebe9e4;
-  --chart-plus: #2b5fd9;   /* Überstunden: mehr gearbeitet */
+  --chart-plus: #5b45e6;   /* Überstunden: mehr gearbeitet */
   --chart-minus: #f2949e;  /* weniger gearbeitet */
 
   /* Liquid Glass (iOS 26/27): durchscheinende Flächen für Menüleiste & Knöpfe */
@@ -49,7 +53,7 @@
   --radius: 22px;
   --nav-h: 62px;  /* Höhe der schwebenden Menüleiste */
   --dock-bottom: max(10px, calc(env(safe-area-inset-bottom) - 6px));
-  --shadow-fab: 0 6px 20px rgba(43, 95, 217, 0.4), 0 2px 6px rgba(0, 0, 0, 0.12);
+  --shadow-fab: 0 6px 20px rgba(91, 69, 230, 0.4), 0 2px 6px rgba(0, 0, 0, 0.12);
   color-scheme: light;
 }
 
@@ -61,9 +65,11 @@
     --line: #313134;
     --text: #f2f2f2;
     --muted: #a3a3a8;
-    --accent: #5b8cff;
+    --accent: #8f87ff;
+    --accent-fill: linear-gradient(135deg, #5b8cff, #a78bfa);
     --on-accent: #0b1220;
-    --accent-ink: #8fb0ff;
+    --accent-ink: #a9a3ff;
+    --kpi-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a9a3ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
     --income: #5ad796;
     --income-fill: #5ad796;
     --on-income: #06240f;
@@ -77,10 +83,10 @@
     --warn-ink: #f0c25a;
     --chart-income: #1f8a55;
     --chart-expense: #e0607a;
-    --chart-current: #5b8cff;
+    --chart-current: #8f87ff;
     --chart-prev: #8a8a90;
     --chart-grid: #2a2a2d;
-    --chart-plus: #5b8cff;
+    --chart-plus: #8f87ff;
     --chart-minus: #e0607a;
     --shadow-fab: 0 6px 20px rgba(0, 0, 0, 0.5);
     --glass: rgba(44, 44, 46, 0.72);
@@ -99,9 +105,11 @@
   --line: #313134;
   --text: #f2f2f2;
   --muted: #a3a3a8;
-  --accent: #5b8cff;
+  --accent: #8f87ff;
+  --accent-fill: linear-gradient(135deg, #5b8cff, #a78bfa);
   --on-accent: #0b1220;
-  --accent-ink: #8fb0ff;
+  --accent-ink: #a9a3ff;
+  --kpi-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a9a3ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
   --income: #5ad796;
   --income-fill: #5ad796;
   --on-income: #06240f;
@@ -115,10 +123,10 @@
   --warn-ink: #f0c25a;
   --chart-income: #1f8a55;
   --chart-expense: #e0607a;
-  --chart-current: #5b8cff;
+  --chart-current: #8f87ff;
   --chart-prev: #8a8a90;
   --chart-grid: #2a2a2d;
-  --chart-plus: #5b8cff;
+  --chart-plus: #8f87ff;
   --chart-minus: #e0607a;
   --shadow-fab: 0 6px 20px rgba(0, 0, 0, 0.5);
   --glass: rgba(44, 44, 46, 0.72);
@@ -184,7 +192,7 @@ a { color: var(--accent-ink); }
 
 .page-head .page-title { margin: 0 4px; min-width: 0; }
 .settings-btn { flex: none; text-decoration: none; }
-.settings-btn[aria-current="page"] { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.settings-btn[aria-current="page"] { background: var(--accent-fill); color: var(--on-accent); border-color: transparent; }
 
 .section-title {
   font-size: 15px;
@@ -277,7 +285,7 @@ a { color: var(--accent-ink); }
   height: var(--nav-h);
   border-radius: 50%;
   border: 0.5px solid rgba(255, 255, 255, 0.25);
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--on-accent);
   box-shadow: var(--shadow-fab), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   display: grid;
@@ -365,7 +373,7 @@ a { color: var(--accent-ink); }
   -webkit-appearance: none;
   appearance: none;
   border: 0;
-  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%231f4bb3' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right center;
+  background: transparent var(--kpi-arrow) no-repeat right center;
   padding: 2px 18px 2px 4px;
   font: inherit;
   font-weight: 700;
@@ -489,7 +497,7 @@ select.field {
   text-decoration: none;
 }
 
-.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.primary { background: var(--accent-fill); color: var(--on-accent); }
 .btn.danger { background: var(--expense-fill); color: var(--on-expense); }
 .btn.block { display: flex; width: 100%; }
 .btn:disabled { opacity: 0.55; }
@@ -603,7 +611,7 @@ select.field {
 }
 
 .round-btn:last-child { justify-self: end; }
-.round-btn.confirm { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.round-btn.confirm { background: var(--accent-fill); color: var(--on-accent); border-color: transparent; }
 .round-btn:disabled { opacity: 0.5; }
 .round-btn:active:not(:disabled) { transform: scale(0.94); }
 
