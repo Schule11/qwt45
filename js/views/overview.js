@@ -73,7 +73,7 @@ export function render(root) {
     h('h2', { class: 'section-title' }, 'Zuletzt erfasst'),
     recent.length
       ? [h('div', { class: 'rows' }, recent.map(bookingRow)),
-        h('p', { style: 'text-align:center; margin: 8px 0 0' }, h('a', { href: '#/buchungen', class: 'btn-text', style: 'display:inline-block' }, 'Alle Buchungen'))]
+        h('p', { style: 'text-align:center; margin: 8px 0 0' }, h('a', { href: '#/finanzen/buchungen', class: 'btn-text', style: 'display:inline-block' }, 'Alle Buchungen'))]
       : h('div', { class: 'empty' },
         h('strong', null, 'Noch nichts erfasst'),
         'Tippe unten rechts auf +, um die erste Einnahme oder Ausgabe einzutragen.'),

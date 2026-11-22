@@ -6,31 +6,34 @@ import { APP_VERSION, storageKey } from './config.js';
 import { openBookingForm } from './views/form.js';
 import { isFormOpen, onFormClosed } from './views/formState.js';
 import * as overview from './views/overview.js';
-import * as bookings from './views/bookings.js';
-import * as report from './views/report.js';
+import * as finances from './views/finances.js';
 import * as settings from './views/settings.js';
 import * as hours from './views/hours.js';
 
 const routes = {
   uebersicht: overview,
-  buchungen: bookings,
-  auswertung: report,
+  finanzen: finances, // Buchungen und Auswertung (Unteransicht: buchungen | monat | jahr)
   stunden: hours,
   einstellungen: settings,
 };
 
+// Frühere Adressen (vor der Zusammenlegung) weiter verstehen
+const OLD_ROUTES = { buchungen: ['finanzen', 'buchungen'], auswertung: ['finanzen', 'monat'] };
+
 const view = document.getElementById('view');
 
+/** "#/finanzen/monat" → { name: 'finanzen', sub: 'monat' } */
 function currentRoute() {
-  const name = location.hash.replace(/^#\/?/, '');
-  return routes[name] ? name : 'uebersicht';
+  let [name, sub = null] = location.hash.replace(/^#\/?/, '').split('/');
+  if (OLD_ROUTES[name]) [name, sub] = OLD_ROUTES[name];
+  return routes[name] ? { name, sub } : { name: 'uebersicht', sub: null };
 }
 
 function render({ keepScroll = false } = {}) {
-  const name = currentRoute();
+  const { name, sub } = currentRoute();
   const y = window.scrollY;
   view.replaceChildren();
-  routes[name].render(view);
+  routes[name].render(view, sub);
   for (const a of document.querySelectorAll('#tabs a')) {
     if (a.dataset.route === name) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
@@ -60,7 +63,7 @@ async function boot() {
 
   // Großer Plus-Button: Formular sofort öffnen (ohne Verzögerung, wegen iPhone-Tastatur)
   document.getElementById('fab').addEventListener('click', () => {
-    if (currentRoute() === 'stunden') hours.openHoursForm();
+    if (currentRoute().name === 'stunden') hours.openHoursForm();
     else openBookingForm();
   });
 

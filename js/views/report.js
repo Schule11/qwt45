@@ -1,5 +1,5 @@
-// Bildschirm "Auswertung": Einnahmen, Ausgaben und Saldo für einen Monat oder ein Jahr,
-// mit Kategorien, Diagrammen und Export (CSV, PDF).
+// Auswertung (Teil von "Finanzen"): Einnahmen, Ausgaben und Saldo für einen Monat
+// oder ein Jahr, mit Kategorien, Diagrammen und Export (CSV, PDF).
 
 import { h, mount, icon, toast, alertDialog } from '../ui.js';
 import { bookingYears, bookingMonths } from '../data.js';
@@ -7,31 +7,15 @@ import { formatMoney, formatSigned, formatBalance, monthLabel, todayISO, MONTHS 
 import { yearReport, monthReport } from '../yearReport.js';
 import { bookingsCsv, summaryCsv, reportPdf } from '../exports.js';
 import { saveFile, prefersShare } from '../files.js';
-import { statBlock, yearSelect, selectField, pageHeader } from './components.js';
+import { statBlock, yearSelect, selectField } from './components.js';
 import { showBookings } from './bookings.js';
 import { monthlyChart, cumulativeChart, shareBar } from './charts.js';
 
 // Auswahl bleibt erhalten, solange die App offen ist
 const view = {
-  mode: 'month', // 'month' | 'year'
   month: todayISO().slice(0, 7),
   year: new Date().getFullYear(),
 };
-
-export function render(root) {
-  const rerender = () => { root.replaceChildren(); render(root); };
-
-  const switcher = h('div', { class: 'segmented period-switch', role: 'group', 'aria-label': 'Zeitraum' },
-    [['month', 'Monat'], ['year', 'Jahr']].map(([value, label]) => h('button', {
-      type: 'button',
-      'aria-pressed': String(view.mode === value),
-      onclick: () => { view.mode = value; rerender(); },
-    }, label)));
-
-  mount(root, pageHeader('Auswertung'), switcher);
-  if (view.mode === 'month') renderMonth(root, rerender);
-  else renderYear(root, rerender);
-}
 
 /** Kategorien mit Anteil (antippen = Buchungen dieser Kategorie zeigen) */
 function categoryCard(list, total, filter) {
@@ -64,7 +48,8 @@ function categorySections(r, filter) {
 
 // ---------- Monat ----------
 
-function renderMonth(root, rerender) {
+/** Auswertung eines Monats; rerender baut den ganzen Bildschirm neu auf */
+export function renderMonth(root, rerender) {
   const months = bookingMonths(todayISO().slice(0, 7));
   if (!months.includes(view.month)) view.month = months[0];
   const r = monthReport(view.month);
@@ -94,7 +79,8 @@ function renderMonth(root, rerender) {
 
 // ---------- Jahr ----------
 
-function renderYear(root, rerender) {
+/** Auswertung eines Jahres */
+export function renderYear(root, rerender) {
   const years = bookingYears();
   if (!years.includes(view.year)) view.year = years[0];
   const r = yearReport(view.year);
@@ -115,10 +101,8 @@ function renderYear(root, rerender) {
 
   // --- Monate (Monat antippen = Auswertung dieses Monats) ---
   const openMonth = (i) => {
-    view.mode = 'month';
     view.month = `${view.year}-${String(i + 1).padStart(2, '0')}`;
-    rerender();
-    window.scrollTo(0, 0);
+    location.hash = '#/finanzen/monat';
   };
   const monthTable = h('section', { class: 'card' },
     h('div', { class: 'month-table' },

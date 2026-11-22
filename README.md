@@ -37,8 +37,8 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
 |---|---|
 | **+ (runder Knopf neben der Menüleiste)** | Neue Buchung: Ausgabe oder Einnahme, Betrag, Kategorie, Beschreibung, Datum, Beleg (Foto oder PDF, optional). Oben rechts ✓ speichert, ✕ bricht ab. |
 | **Übersicht** | Einnahmen, Ausgaben und Saldo für den aktuellen Monat und das gewählte Jahr, dazu dein Überstunden-Stand und die zuletzt erfassten Buchungen |
-| **Buchungen** | Alle Buchungen nach Monaten (mit Saldo je Monat); Suche und Filter nach Jahr, Art und Kategorie – mit Filter erscheint die Summe der Treffer; antippen zum Bearbeiten oder Löschen |
-| **Auswertung** | Umschalter **Monat \| Jahr**. *Monat:* Ergebnis und Ausgaben/Einnahmen nach Kategorie (größte zuerst, mit Anteil). *Jahr:* Diagramm je Monat, Monatstabelle (ein Tipp auf einen Monat öffnet ihn), Saldo im Vergleich zum Vorjahr, Kategorien, Export als PDF und CSV |
+| **Menüleiste unten** | Drei Reiter: Übersicht, Finanzen, Stunden – daneben der **+**-Knopf |
+| **Finanzen** | Oben der Umschalter **Buchungen \| Monat \| Jahr**. *Buchungen:* alle Buchungen nach Monaten (mit Saldo je Monat); Suche und Filter nach Jahr, Art und Kategorie – mit Filter erscheint die Summe der Treffer; antippen zum Bearbeiten oder Löschen. *Monat:* Ergebnis und Ausgaben/Einnahmen nach Kategorie (größte zuerst, mit Anteil). *Jahr:* Diagramm je Monat, Monatstabelle (ein Tipp auf einen Monat öffnet ihn), Saldo im Vergleich zum Vorjahr, Kategorien, Export als PDF und CSV |
 | **Einstellungen** (Zahnrad oben rechts) | Kategorien, Überstunden (Übertrag, Anzeige), Backup, hell/dunkel |
 
 - **Saldo** = Einnahmen minus Ausgaben. Ein Minus zeigt die App rot.
@@ -46,7 +46,7 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
 - **Kategorien** sind vorbelegt (z. B. Gehalt, Lebensmittel, Miete & Wohnen) und unter *Einstellungen → Kategorien*
   frei änderbar: umbenennen, sortieren, neue anlegen, löschen (die Buchungen wandern dann in eine andere Kategorie).
   Im Formular stehen die zuletzt benutzten Kategorien oben.
-- Ein Tipp auf eine Kategorie in der Auswertung zeigt alle Buchungen dieser Kategorie im gewählten Monat bzw. Jahr.
+- Ein Tipp auf eine Kategorie (Finanzen → Monat oder Jahr) zeigt alle Buchungen dieser Kategorie im gewählten Monat bzw. Jahr.
 
 ## 3. Überstunden
 
@@ -129,7 +129,7 @@ Reines HTML, CSS und JavaScript, ohne Build-Werkzeuge und ohne fremde Bibliothek
 | `js/yearReport.js`, `js/exports.js`, `js/pdf.js` | Auswertung je Monat/Jahr, CSV, PDF (auch für Überstunden) |
 | `js/backup.js` | Backup erstellen, prüfen, zusammenführen |
 | `js/notices.js` | Backup-Erinnerung |
-| `js/views/*.js` | Die Bildschirme (`hours.js`: Überstunden und Formular „Monat erfassen“, `form.js`: Buchung) |
+| `js/views/*.js` | Die Bildschirme (`finances.js`: Reiter „Finanzen“ mit Buchungsliste `bookings.js` und Auswertung `report.js`; `hours.js`: Überstunden und Formular „Monat erfassen“; `form.js`: Buchung) |
 | `js/views/charts.js` | Diagramme (SVG, ohne Bibliothek; Farben in `css/app.css` als `--chart-…`) |
 | `sw.js` | Offline-Modus (Liste aller Dateien) |
 

@@ -1,9 +1,9 @@
-// Bildschirm "Buchungen": Liste nach Monaten, mit Suche und Filtern.
+// Buchungsliste (Teil von "Finanzen"): nach Monaten, mit Suche und Filtern.
 
 import { h, mount } from '../ui.js';
 import { state, categoriesFor, categoryName, sortBookings, sumBookings, bookingYears } from '../data.js';
 import { formatSigned, formatBalance, formatDate, centsToInput, monthLabel, normalizeText } from '../format.js';
-import { bookingRow, yearSelect, pageHeader } from './components.js';
+import { bookingRow, yearSelect } from './components.js';
 
 // Filter bleiben erhalten, solange die App offen ist
 const filters = {
@@ -18,10 +18,10 @@ const filters = {
 export function showBookings({ year = 'all', month = null, type = 'all', category = 'all' } = {}) {
   if (month) year = month.slice(0, 4);
   Object.assign(filters, { year: String(year), month, type, category, q: '' });
-  location.hash = '#/buchungen';
+  location.hash = '#/finanzen/buchungen';
 }
 
-export function render(root) {
+export function renderList(root) {
   const results = h('div', { 'aria-live': 'polite' });
 
   const search = h('input', {
@@ -175,7 +175,6 @@ export function render(root) {
   fillCategories();
   renderMonthPill();
   mount(root,
-    pageHeader('Buchungen'),
     h('div', { class: 'filters' },
       search,
       typeFilter,
