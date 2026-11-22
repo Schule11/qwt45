@@ -53,6 +53,23 @@ export function yearReport(year) {
   return { year, bookings, totals: sumBookings(bookings), categories: byCategory(bookings), months };
 }
 
+/**
+ * Feste Farbe je Kategorie (für den Ring "Wohin ging das Geld?"): Die über die ganze
+ * Zeit größten Kategorien bekommen die Farbplätze 1 bis max, alle anderen zählen
+ * zu "Weitere". So behält eine Kategorie ihre Farbe, egal welcher Monat gezeigt wird.
+ * Ergebnis: Map(categoryId → Platz 1…max)
+ */
+export function categorySlots(type = 'expense', max = 6) {
+  const sums = new Map();
+  for (const b of state.bookings) {
+    if (b.type === type) sums.set(b.categoryId, (sums.get(b.categoryId) || 0) + b.amountCents);
+  }
+  const ranked = [...sums.entries()]
+    .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+    .slice(0, max);
+  return new Map(ranked.map(([id], i) => [id, i + 1]));
+}
+
 /** Wie yearReport, aber für einen Monat ("JJJJ-MM") – ohne Monatsaufteilung */
 export function monthReport(ym) {
   const bookings = bookingsIn(ym);

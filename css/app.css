@@ -38,6 +38,9 @@
   --chart-expense: #f2949e;
   --chart-current: #5b45e6;
   --chart-prev: #9b978f;
+  /* Kategorien im Ring "Wohin ging das Geld?" – Reihenfolge ist Teil der Prüfung (Farbsehschwächen) */
+  --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100; --cat-5: #e87ba4; --cat-6: #008300;
+  --cat-other: #9b978f;
   --chart-grid: #ebe9e4;
   --chart-plus: #5b45e6;   /* Überstunden: mehr gearbeitet */
   --chart-minus: #f2949e;  /* weniger gearbeitet */
@@ -83,6 +86,10 @@
     --chart-expense: #e0607a;
     --chart-current: #8f87ff;
     --chart-prev: #8a8a90;
+  --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500; --cat-5: #d55181; --cat-6: #0ca30c;
+  --cat-other: #8a8a90;
+    --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500; --cat-5: #d55181; --cat-6: #0ca30c;
+    --cat-other: #8a8a90;
     --chart-grid: #2a2a2d;
     --chart-plus: #8f87ff;
     --chart-minus: #e0607a;
@@ -803,15 +810,19 @@ select.field {
 
 .filters { display: grid; gap: 10px; margin-bottom: 8px; }
 .filter-row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; }
-.type-filter button { min-height: 40px; font-size: 15px; padding: 0 8px; }
-.type-filter button[aria-pressed="true"],
-.period-switch button[aria-pressed="true"],
-.segmented-3 button[aria-pressed="true"] {
+.type-filter .chip { min-height: 38px; padding: 6px 15px; font-size: 15.5px; }
+.type-filter .chip[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.segmented-3 button[aria-pressed="true"],
+.chart-switch button[aria-pressed="true"] {
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
 }
-.filter-row .field { font-size: 16px; min-height: 48px; padding: 10px 34px 10px 12px; background-position: right 11px center; }
+.filter-row .field { font-size: 16px; min-height: 44px; padding: 8px 34px 8px 12px; background-position: right 11px center; }
 
 .list-summary { font-size: 15px; color: var(--muted); margin: 14px 4px 0; }
 .list-summary .num { font-weight: 650; }
@@ -877,20 +888,112 @@ select.field {
 
 /* ---------- Auswertung ---------- */
 
-.period-switch { margin-bottom: 16px; }
-.period-switch button { min-height: 42px; font-size: 16px; }
+/* Hauptumschalter auf "Finanzen": gewählte Ansicht im Akzent-Verlauf */
+.view-switch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  background: var(--surface-2);
+  border-radius: 999px;
+}
+
+.view-switch button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16.5px;
+  font-weight: 700;
+}
+
+.view-switch button[aria-pressed="true"] {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Blättern: ‹ November 2026 › (die Mitte öffnet eine Auswahl) */
+.period-nav { display: flex; align-items: center; gap: 8px; margin: -4px -6px 8px; }
+.nav-arrow { width: 40px; height: 40px; flex: none; }
+.nav-arrow:disabled { opacity: 0.3; }
+.period-select-wrap { position: relative; flex: 1; min-width: 0; display: flex; justify-content: center; border-radius: 12px; }
+.period-select-wrap:focus-within { outline: 2px solid var(--accent); }
+.period-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.period-label .icon { color: var(--accent-ink); }
+.period-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 16px; /* verhindert Zoom am iPhone */
+  cursor: pointer;
+}
+
+/* Auswahl im Kopf eines Kastens (z. B. Jahr bei den Überstunden) */
 .head-select { width: 180px; max-width: 58%; }
 .head-select .field { min-height: 44px; padding: 8px 34px 8px 12px; font-size: 16px; background-position: right 11px center; }
 
-.month-link {
-  border: 0;
-  background: none;
-  padding: 0;
-  text-align: left;
-  color: var(--accent-ink);
-  font-weight: 650;
-  font-size: inherit;
+.card-foot { display: flex; justify-content: flex-end; margin: 6px -6px -10px 0; }
+.export-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 6px; }
+
+.chart-switch { margin-bottom: 14px; }
+.chart-switch button { min-height: 38px; font-size: 15px; }
+
+.month-row { min-height: 64px; }
+.month-row .row-sub { gap: 6px; font-variant-numeric: tabular-nums; }
+.month-row .amt { font-size: 17px; }
+.month-row .chevron { font-size: 24px; margin-left: -4px; }
+
+/* Ring "Wohin ging das Geld?" */
+.ring-card { padding-top: 18px; }
+.ring-wrap { position: relative; width: 200px; height: 200px; margin: 0 auto 10px; }
+.ring-svg { display: block; overflow: visible; }
+.ring-seg { transition: opacity 0.15s; }
+.ring-seg[data-slot="1"] { stroke: var(--cat-1); }
+.ring-seg[data-slot="2"] { stroke: var(--cat-2); }
+.ring-seg[data-slot="3"] { stroke: var(--cat-3); }
+.ring-seg[data-slot="4"] { stroke: var(--cat-4); }
+.ring-seg[data-slot="5"] { stroke: var(--cat-5); }
+.ring-seg[data-slot="6"] { stroke: var(--cat-6); }
+.ring-seg[data-slot="0"] { stroke: var(--cat-other); }
+.ring-hit { stroke: transparent; cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+.ring-wrap.has-sel .ring-seg:not(.sel) { opacity: 0.28; }
+.ring-center {
+  position: absolute;
+  inset: 32px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 6px;
+  text-align: center;
 }
+.ring-value { font-size: 22px; font-weight: 750; line-height: 1.15; }
+.ring-label { font-size: 13.5px; color: var(--muted); line-height: 1.25; }
+
+.swatch { flex: none; width: 12px; height: 12px; border-radius: 4px; }
+.swatch[data-slot="1"] { background: var(--cat-1); }
+.swatch[data-slot="2"] { background: var(--cat-2); }
+.swatch[data-slot="3"] { background: var(--cat-3); }
+.swatch[data-slot="4"] { background: var(--cat-4); }
+.swatch[data-slot="5"] { background: var(--cat-5); }
+.swatch[data-slot="6"] { background: var(--cat-6); }
+.swatch[data-slot="0"] { background: var(--cat-other); }
 
 .report-row {
   display: flex;
@@ -913,19 +1016,6 @@ select.field {
 .card-list { padding-top: 4px; padding-bottom: 4px; }
 .report-link { min-height: 60px; }
 .report-link:active { background: var(--surface-2); }
-
-.month-table {
-  display: grid;
-  grid-template-columns: auto 1fr 1fr 1fr;
-  column-gap: 10px;
-  row-gap: 8px;
-  font-size: 15.5px;
-  font-variant-numeric: tabular-nums;
-}
-
-.month-table span { white-space: nowrap; }
-.month-table span:not(:nth-child(4n + 1)) { text-align: right; }
-.month-table .th { font-size: 13.5px; font-weight: 650; color: var(--muted); }
 
 /* ---------- Einstellungen ---------- */
 

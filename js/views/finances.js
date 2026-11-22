@@ -23,7 +23,7 @@ export function render(root, sub = null) {
   last = mode;
   const rerender = () => { root.replaceChildren(); render(root, mode); };
 
-  const switcher = h('div', { class: 'segmented segmented-3 period-switch', role: 'group', 'aria-label': 'Ansicht' },
+  const switcher = h('div', { class: 'view-switch period-switch', role: 'group', 'aria-label': 'Ansicht' },
     MODES.map(([key, label]) => h('button', {
       type: 'button',
       'data-mode': key,

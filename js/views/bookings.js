@@ -44,11 +44,12 @@ export function renderList(root) {
     renderResults();
   }, { withAll: true });
 
-  // Art als Umschalter (statt Klappliste): ein Tipp, alles sichtbar
-  const typeFilter = h('div', { class: 'segmented segmented-3 type-filter', role: 'group', 'aria-label': 'Art' },
+  // Art als kleine Chips (ein Tipp, alles sichtbar) – bewusst anders als der Hauptumschalter oben
+  const typeFilter = h('div', { class: 'chips type-filter', role: 'group', 'aria-label': 'Art' },
     [['all', 'Alle'], ['income', 'Einnahmen'], ['expense', 'Ausgaben']].map(([value, label]) =>
       h('button', {
         type: 'button',
+        class: 'chip',
         'data-type': value,
         'aria-pressed': String(filters.type === value),
         onclick: () => {

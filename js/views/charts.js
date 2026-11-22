@@ -297,6 +297,85 @@ export function hoursChart(rows, { year, fmt }) {
     h('p', { class: 'chart-note' }, 'Achse in Stunden. Tippe auf einen Monat, um seine Werte zu sehen.'));
 }
 
+// ---------- Ring: Wohin ging das Geld? ----------
+
+/**
+ * Ringdiagramm der Ausgaben nach Kategorie.
+ * parts: [{ id, name, cents, slot }] – slot 1–6 = feste Farbe der Kategorie, 0 = "Weitere".
+ * Die farbigen Teile stehen in Platz-Reihenfolge (geprüfte Farbfolge), danach "Weitere" in Grau.
+ * In der Mitte die Summe; ein Tipp auf einen Teil zeigt dort Name, Betrag und Anteil.
+ */
+export function ringChart(parts, { caption = 'Ausgaben' } = {}) {
+  const total = parts.reduce((s, p) => s + p.cents, 0);
+  const colored = parts.filter((p) => p.slot).sort((a, b) => a.slot - b.slot);
+  const rest = parts.filter((p) => !p.slot);
+  const segs = colored.map((p) => ({ key: p.id, name: p.name, cents: p.cents, slot: p.slot }));
+  if (rest.length) {
+    segs.push({
+      key: 'rest',
+      name: rest.length === 1 ? rest[0].name : `Weitere (${rest.length} Kategorien)`,
+      cents: rest.reduce((s, p) => s + p.cents, 0),
+      slot: 0,
+    });
+  }
+  const pct = (c) => (total > 0 ? Math.round((c / total) * 100) : 0);
+
+  const SIZE = 200;
+  const T = 26;               // Ringbreite
+  const r = SIZE / 2 - T / 2; // Mittellinie des Rings
+  const c = SIZE / 2;
+  const svg = svgEl('svg', {
+    width: SIZE, height: SIZE, viewBox: `0 0 ${SIZE} ${SIZE}`, class: 'ring-svg',
+    role: 'img', 'aria-label': `${caption} nach Kategorie: ${segs.map((s) => `${s.name} ${pct(s.cents)} %`).join(', ')}`,
+  });
+  const valueEl = h('span', { class: 'ring-value' });
+  const labelEl = h('span', { class: 'ring-label' });
+  const center = h('div', { class: 'ring-center', 'aria-live': 'polite' }, valueEl, labelEl);
+  const wrap = h('div', { class: 'ring-wrap' }, svg, center);
+  let selected = null;
+
+  const show = (key) => {
+    const s = segs.find((x) => x.key === key);
+    wrap.classList.toggle('has-sel', !!s);
+    for (const el of svg.querySelectorAll('.ring-seg')) el.classList.toggle('sel', el.dataset.key === key);
+    valueEl.textContent = formatMoney(s ? s.cents : total);
+    labelEl.textContent = s ? `${s.name} · ${pct(s.cents)} %` : caption;
+  };
+
+  const pt = (a) => `${(c + r * Math.cos(a)).toFixed(2)} ${(c + r * Math.sin(a)).toFixed(2)}`;
+  const gap = segs.length > 1 ? 2 / r : 0; // 2px Fläche zwischen den Teilen
+  let a0 = -Math.PI / 2;
+  for (const s of segs) {
+    const a1 = a0 + (s.cents / total) * Math.PI * 2;
+    const start = a0 + gap / 2;
+    const end = Math.max(start + 0.001, a1 - gap / 2);
+    const attrs = segs.length === 1
+      ? ['circle', { cx: c, cy: c, r }]
+      : ['path', { d: `M ${pt(start)} A ${r} ${r} 0 ${end - start > Math.PI ? 1 : 0} 1 ${pt(end)}` }];
+    const seg = svgEl(attrs[0], { ...attrs[1], class: 'ring-seg', 'data-slot': s.slot, 'data-key': s.key, 'stroke-width': T, fill: 'none' });
+    // Größere, unsichtbare Trefferfläche über dem Teil
+    const hit = svgEl(attrs[0], {
+      ...attrs[1], class: 'ring-hit', 'stroke-width': T + 14, fill: 'none', tabindex: 0,
+      'aria-label': `${s.name}: ${formatMoney(s.cents)}, ${pct(s.cents)} %`,
+    });
+    hit.addEventListener('click', () => { selected = selected === s.key ? null : s.key; show(selected); });
+    hit.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(s.key); });
+    hit.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') show(selected); });
+    hit.addEventListener('focus', () => show(s.key));
+    hit.addEventListener('blur', () => show(selected));
+    svg.append(seg, hit);
+    a0 = a1;
+  }
+  center.addEventListener('click', () => { selected = null; show(null); });
+  show(null);
+  return wrap;
+}
+
+/** Farbpunkt einer Kategorie (gleiche Farbe wie ihr Teil im Ring) */
+export function swatch(slot) {
+  return h('span', { class: 'swatch', 'data-slot': slot, 'aria-hidden': 'true' });
+}
+
 /** Dünner Anteilsbalken (z. B. Anteil einer Kategorie an allen Einnahmen) */
 export function shareBar(part, total, kind) {
   const pct = total > 0 ? Math.max(1, Math.round((part / total) * 100)) : 0;

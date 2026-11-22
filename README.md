@@ -38,7 +38,7 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
 | **+ (runder Knopf neben der Menüleiste)** | Neue Buchung: Ausgabe oder Einnahme, Betrag, Kategorie, Beschreibung, Datum, Beleg (Foto oder PDF, optional). Oben rechts ✓ speichert, ✕ bricht ab. |
 | **Übersicht** | Einnahmen, Ausgaben und Saldo für den aktuellen Monat und das gewählte Jahr, dazu dein Überstunden-Stand und die zuletzt erfassten Buchungen |
 | **Menüleiste unten** | Drei Reiter: Übersicht, Finanzen, Stunden – daneben der **+**-Knopf |
-| **Finanzen** | Oben der Umschalter **Buchungen \| Monat \| Jahr**. *Buchungen:* alle Buchungen nach Monaten (mit Saldo je Monat); Suche und Filter nach Jahr, Art und Kategorie – mit Filter erscheint die Summe der Treffer; antippen zum Bearbeiten oder Löschen. *Monat:* Ergebnis und Ausgaben/Einnahmen nach Kategorie (größte zuerst, mit Anteil). *Jahr:* Diagramm je Monat, Monatstabelle (ein Tipp auf einen Monat öffnet ihn), Saldo im Vergleich zum Vorjahr, Kategorien, Export als PDF und CSV |
+| **Finanzen** | Oben der Umschalter **Buchungen \| Monat \| Jahr**. *Buchungen:* alle Buchungen nach Monaten (mit Saldo je Monat); Suche, Filter-Chips (Alle/Einnahmen/Ausgaben), Jahr und Kategorie – mit Filter erscheint die Summe der Treffer; antippen zum Bearbeiten oder Löschen. *Monat:* mit ‹ › blättern (ein Tipp auf den Monatsnamen springt direkt), Ergebnis, Ring **„Wohin ging das Geld?“** mit den Ausgaben-Kategorien, Einnahmen nach Kategorie. *Jahr:* Ergebnis mit **Exportieren** (PDF, CSV), Diagramm umschaltbar „Je Monat“/„Saldo im Verlauf“ (mit Vorjahr), Liste der Monate (antippen öffnet den Monat), Ring und Kategorien |
 | **Einstellungen** (Zahnrad oben rechts) | Kategorien, Überstunden (Übertrag, Anzeige), Backup, hell/dunkel |
 
 - **Saldo** = Einnahmen minus Ausgaben. Ein Minus zeigt die App rot.
@@ -47,6 +47,9 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
   frei änderbar: umbenennen, sortieren, neue anlegen, löschen (die Buchungen wandern dann in eine andere Kategorie).
   Im Formular stehen die zuletzt benutzten Kategorien oben.
 - Ein Tipp auf eine Kategorie (Finanzen → Monat oder Jahr) zeigt alle Buchungen dieser Kategorie im gewählten Monat bzw. Jahr.
+- **Ring „Wohin ging das Geld?“:** Die sechs Kategorien, für die du insgesamt am meisten ausgibst, haben eine feste Farbe
+  (gleich in jedem Monat und Jahr); alle übrigen sind grau als „Weitere“ zusammengefasst. Ein Tipp auf den Ring zeigt in
+  der Mitte Name, Betrag und Anteil; die Liste darunter nennt alle Kategorien mit genauen Beträgen.
 
 ## 3. Überstunden
 
