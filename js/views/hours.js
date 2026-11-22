@@ -10,7 +10,7 @@ import {
 } from '../hours.js';
 import { hoursCsv, hoursPdf } from '../exports.js';
 import { saveFile, prefersShare } from '../files.js';
-import { pageHeader, yearSelect } from './components.js';
+import { pageHeader, yearSelect, cardHead, tapCard } from './components.js';
 import { hoursChart } from './charts.js';
 import { registerForm } from './formState.js';
 
@@ -23,21 +23,17 @@ const currentMonth = () => todayISO().slice(0, 7);
 
 // ---------- Bausteine (auch für die Übersicht) ----------
 
-/** Große Karte mit dem aktuellen Stand; onClick macht sie antippbar (Übersicht) */
-export function balanceCard({ onClick = null } = {}) {
+/** Karte mit dem aktuellen Stand; onClick macht sie antippbar (Übersicht) */
+export function balanceCard({ onClick = null, title = null } = {}) {
   const b = hoursBalance();
   const sub = b.lastMonth
     ? `Stand nach ${monthLabel(b.lastMonth)} · ${b.count} ${b.count === 1 ? 'Monat' : 'Monate'} erfasst`
     : 'Noch kein Monat erfasst';
-  const content = [
-    h('span', { class: 'hours-label' }, b.minutes < 0 ? 'Minusstunden' : 'Überstunden'),
+  return tapCard({ onClick, className: 'hours-card', id: 'ov-hours', label: 'Aktueller Stand' },
+    cardHead('clock', title || (b.minutes < 0 ? 'Minusstunden' : 'Überstunden'), { chevron: !!onClick }),
     h('span', { class: `hours-big${b.minutes < 0 ? ' neg' : ''}`, 'data-k': 'hours-balance' }, signedHours(b.minutes)),
     h('span', { class: 'hours-sub' }, sub),
-    startBalance() && b.count ? h('span', { class: 'hours-sub' }, `inkl. Übertrag ${signedHours(startBalance())}`) : null,
-  ];
-  if (!onClick) return h('section', { class: 'card hours-card', 'aria-label': 'Aktueller Stand' }, content);
-  return h('button', { type: 'button', class: 'card hours-card hours-link', onclick: onClick },
-    content, h('span', { class: 'chevron', 'aria-hidden': 'true' }, '›'));
+    startBalance() && b.count ? h('span', { class: 'hours-sub' }, `inkl. Übertrag ${signedHours(startBalance())}`) : null);
 }
 
 /** Hinweiszeile, wenn Monate fehlen (z. B. der Vormonat); null, wenn alles da ist */
@@ -62,7 +58,7 @@ export function render(root) {
 
   mount(root,
     pageHeader('Überstunden'),
-    balanceCard(),
+    balanceCard({ title: 'Aktueller Stand' }),
     missingHint(),
     h('button', { type: 'button', class: 'btn primary block', id: 'hours-add', onclick: () => openHoursForm() },
       icon('clock'), 'Monat erfassen'));

@@ -17,6 +17,18 @@ const view = {
   year: new Date().getFullYear(),
 };
 
+/** Finanzen → Monat mit diesem Monat ("JJJJ-MM") öffnen, z. B. von der Übersicht */
+export function showMonth(ym) {
+  view.month = ym;
+  location.hash = '#/finanzen/monat';
+}
+
+/** Finanzen → Jahr mit diesem Jahr öffnen */
+export function showYear(year) {
+  view.year = Number(year);
+  location.hash = '#/finanzen/jahr';
+}
+
 /** Kategorien mit Anteil (antippen = Buchungen dieser Kategorie zeigen) */
 function categoryCard(list, total, filter) {
   return h('section', { class: 'card card-list' },

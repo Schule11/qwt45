@@ -19,7 +19,6 @@
   --accent-fill: linear-gradient(135deg, #2563eb, #7c3aed);
   --on-accent: #ffffff;
   --accent-ink: #4a33cf;   /* für Text/Links: dunkler, damit gut lesbar */
-  --kpi-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%234a33cf' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
 
   --income: #157a46;
   --income-fill: #157a46;
@@ -69,7 +68,6 @@
     --accent-fill: linear-gradient(135deg, #5b8cff, #a78bfa);
     --on-accent: #0b1220;
     --accent-ink: #a9a3ff;
-    --kpi-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a9a3ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
     --income: #5ad796;
     --income-fill: #5ad796;
     --on-income: #06240f;
@@ -109,7 +107,6 @@
   --accent-fill: linear-gradient(135deg, #5b8cff, #a78bfa);
   --on-accent: #0b1220;
   --accent-ink: #a9a3ff;
-  --kpi-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a9a3ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
   --income: #5ad796;
   --income-fill: #5ad796;
   --on-income: #06240f;
@@ -335,52 +332,30 @@ a { color: var(--accent-ink); }
 .stat.total .stat-label { color: var(--text); font-weight: 650; }
 .stat.total .stat-value { font-size: 26px; font-weight: 750; }
 
-/* Kennzahlen Monat | Jahr */
-.kpi { padding: 16px 18px 18px; }
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: 12px;
-  row-gap: 10px;
-  align-items: baseline;
-  font-variant-numeric: tabular-nums;
-}
-
-.kpi-head {
-  justify-self: end;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.kpi-label { color: var(--muted); font-size: 16.5px; white-space: nowrap; }
-.kpi-val {
-  min-width: 0;
-  overflow: hidden;
-  text-align: right;
-  font-size: calc(16.5px * var(--kpi-scale, 1));
-  font-weight: 650;
-  white-space: nowrap;
-}
-.kpi-sep { grid-column: 1 / -1; height: 1px; background: var(--line); margin: 2px 0; }
-.kpi-note { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); text-align: right; }
-.kpi-grid .kpi-label:nth-last-child(3) { color: var(--text); font-weight: 650; }
-.kpi-val.kpi-total { font-size: calc(21px * var(--kpi-scale, 1)); font-weight: 750; }
-
-.kpi-year {
-  -webkit-appearance: none;
-  appearance: none;
-  border: 0;
-  background: transparent var(--kpi-arrow) no-repeat right center;
-  padding: 2px 18px 2px 4px;
+/* Kästen auf der Übersicht: Kopf mit Symbol, Titel und › ; als Ganzes antippbar */
+.tap-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
   font: inherit;
-  font-weight: 700;
-  color: var(--accent-ink);
-  text-align: right;
-  text-align-last: right;
 }
+
+.tap-card:active { background: var(--surface-2); }
+
+.ov-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.ov-icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-ink);
+}
+.ov-title { flex: 1; min-width: 0; font-size: 19px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-head .chevron { font-size: 26px; }
 
 .pos { color: var(--income); }
 .neg { color: var(--expense); }
@@ -1183,24 +1158,8 @@ dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
 
 /* ---------- Überstunden ---------- */
 
-.hours-card {
-  display: grid;
-  gap: 2px;
-  padding: 16px 18px 18px;
-}
-
-.hours-link {
-  position: relative;
-  width: 100%;
-  text-align: left;
-  color: inherit;
-  font: inherit;
-  padding-right: 40px;
-}
-
-.hours-link:active { background: var(--surface-2); }
-.hours-link .chevron { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
-.hours-label { font-size: 15px; font-weight: 700; color: var(--muted); }
+.hours-card { display: grid; gap: 2px; }
+.hours-card .ov-head { margin-bottom: 4px; }
 .hours-big { font-size: 34px; font-weight: 780; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.2; }
 .hours-big.neg { color: var(--expense); }
 .hours-sub { font-size: 14.5px; color: var(--muted); }

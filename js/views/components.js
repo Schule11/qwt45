@@ -37,19 +37,35 @@ export function bookingRow(b) {
   h('div', { class: `amt ${b.type}` }, formatSigned(b.amountCents, b.type)));
 }
 
-/** Einnahmen / Ausgaben / Saldo als Block */
-export function statBlock(sums) {
+/** Einnahmen / Ausgaben / Saldo als Block; key (z. B. "month") kennzeichnet die Werte (data-k) */
+export function statBlock(sums, { key = null } = {}) {
+  const k = (name) => (key ? `${key}-${name}` : null);
   return [
     h('div', { class: 'stat' },
       h('span', { class: 'stat-label' }, 'Einnahmen'),
-      h('span', { class: 'stat-value pos' }, formatSigned(sums.income, 'income'))),
+      h('span', { class: 'stat-value pos', 'data-k': k('income') }, formatSigned(sums.income, 'income'))),
     h('div', { class: 'stat' },
       h('span', { class: 'stat-label' }, 'Ausgaben'),
-      h('span', { class: 'stat-value neg' }, formatSigned(sums.expense, 'expense'))),
+      h('span', { class: 'stat-value neg', 'data-k': k('expense') }, formatSigned(sums.expense, 'expense'))),
     h('div', { class: 'stat total' },
       h('span', { class: 'stat-label' }, 'Saldo'),
-      h('span', { class: `stat-value ${sums.balance < 0 ? 'neg' : ''}` }, formatBalance(sums.balance))),
+      h('span', { class: `stat-value ${sums.balance < 0 ? 'neg' : ''}`, 'data-k': k('balance') }, formatBalance(sums.balance))),
   ];
+}
+
+/** Kopf eines Kastens: Symbol im farbigen Feld, Titel, rechts optional › */
+export function cardHead(iconName, title, { chevron = false } = {}) {
+  return h('div', { class: 'ov-head' },
+    h('span', { class: 'ov-icon' }, icon(iconName, 22)),
+    h('span', { class: 'ov-title' }, title),
+    chevron ? h('span', { class: 'chevron', 'aria-hidden': 'true' }, '›') : null);
+}
+
+/** Kasten; mit onClick ist er als Ganzes antippbar (z. B. auf der Übersicht) */
+export function tapCard({ onClick = null, className = '', id = null, label = null }, ...children) {
+  const cls = `card ${className}`.trim();
+  if (!onClick) return h('section', { class: cls, id, 'aria-label': label }, children);
+  return h('button', { type: 'button', class: `${cls} tap-card`, id, onclick: onClick }, children);
 }
 
 /** Auswahl als Klappliste; options: [[Wert, Text], …] */
