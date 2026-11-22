@@ -88,16 +88,16 @@ export function render(root) {
   // Aktiver Monatsfilter als entfernbares Schild
   const monthPill = h('div', { class: 'chips filter-chips' });
   function renderMonthPill() {
-    monthPill.replaceChildren(filters.month
-      ? h('div', { class: 'filter-pill' },
+    // Ohne Filter leer lassen (replaceChildren(null) würde den Text "null" einfügen)
+    monthPill.replaceChildren(...!filters.month ? [] : [
+      h('div', { class: 'filter-pill' },
         h('span', { class: 'filter-pill-name' }, `Nur ${monthLabel(filters.month)}`),
         h('button', {
           type: 'button',
           class: 'pill-clear',
           'aria-label': 'Monatsfilter entfernen',
           onclick: () => { filters.month = null; renderMonthPill(); renderResults(); },
-        }, '✕'))
-      : null);
+        }, '✕'))]);
   }
 
   function filtered() {

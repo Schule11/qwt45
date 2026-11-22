@@ -7,17 +7,19 @@ const DAY = 24 * 60 * 60 * 1000;
 /** Ist ein Backup fällig? Gibt null oder { last, ageDays } zurück. */
 export function backupDue(now = Date.now()) {
   const days = state.settings.backupReminderDays;
-  if (!days || !state.bookings.length) return null;
-  const { lastBackupAt: last, bookingsAtLastBackup, backupSnoozeUntil } = state.local;
+  const all = [...state.bookings, ...state.hours]; // Buchungen und Überstunden
+  if (!days || !all.length) return null;
+  const { lastBackupAt: last, bookingsAtLastBackup, hoursAtLastBackup = 0, backupSnoozeUntil } = state.local;
   if (backupSnoozeUntil && Date.parse(backupSnoozeUntil) > now) return null;
 
   const changed = !last
     || state.bookings.length !== bookingsAtLastBackup
-    || state.bookings.some((b) => b.updatedAt > last);
+    || state.hours.length !== hoursAtLastBackup
+    || all.some((x) => x.updatedAt > last);
   if (!changed) return null;
 
-  // Ohne bisheriges Backup: Erinnerung eine Woche nach der ersten Buchung
-  const reference = last || state.bookings.reduce((min, b) => (b.createdAt < min ? b.createdAt : min), state.bookings[0].createdAt);
+  // Ohne bisheriges Backup: Erinnerung eine Woche nach dem ersten Eintrag
+  const reference = last || all.reduce((min, x) => (x.createdAt < min ? x.createdAt : min), all[0].createdAt);
   const ageDays = Math.floor((now - Date.parse(reference)) / DAY);
   if (ageDays < (last ? days : Math.min(7, days))) return null;
   return { last, ageDays };

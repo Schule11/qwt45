@@ -9,11 +9,13 @@ import * as overview from './views/overview.js';
 import * as bookings from './views/bookings.js';
 import * as report from './views/report.js';
 import * as settings from './views/settings.js';
+import * as hours from './views/hours.js';
 
 const routes = {
   uebersicht: overview,
   buchungen: bookings,
   auswertung: report,
+  stunden: hours,
   einstellungen: settings,
 };
 
@@ -33,6 +35,8 @@ function render({ keepScroll = false } = {}) {
     if (a.dataset.route === name) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
+  // Der +-Knopf erfasst auf "Stunden" einen Monat, sonst eine Buchung
+  document.getElementById('fab').setAttribute('aria-label', name === 'stunden' ? 'Monat erfassen' : 'Neue Buchung');
   window.scrollTo(0, keepScroll ? y : 0);
 }
 
@@ -55,7 +59,10 @@ async function boot() {
   onChange(() => render({ keepScroll: true }));
 
   // Großer Plus-Button: Formular sofort öffnen (ohne Verzögerung, wegen iPhone-Tastatur)
-  document.getElementById('fab').addEventListener('click', () => openBookingForm());
+  document.getElementById('fab').addEventListener('click', () => {
+    if (currentRoute() === 'stunden') hours.openHoursForm();
+    else openBookingForm();
+  });
 
   // Gerade erst aktualisiert?
   try {

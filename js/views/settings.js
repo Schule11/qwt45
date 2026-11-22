@@ -3,47 +3,53 @@
 //
 // Eingaben werden beim Verlassen des Feldes gespeichert (auch beim Zurück-Tippen).
 
-import { h, mount, icon, toast, choiceDialog, confirmDialog, alertDialog, getTheme, setTheme } from '../ui.js';
+import { h, mount, icon, toast, choiceDialog, confirmDialog, alertDialog, getTheme, setTheme, openSheet } from '../ui.js';
 import { state, storageIsPersistent, updateSettings, categoriesFor } from '../data.js';
 import { formatDateTime, formatSize } from '../format.js';
 import { APP_VERSION, APP_STAGE } from '../config.js';
 import { createBackupFile, markBackupDone, readBackupFile, applyBackup } from '../backup.js';
 import { saveFile, prefersShare } from '../files.js';
+import { formatHours, hoursToInput, parseHours, hoursFormat } from '../hours.js';
 import { openCategoryList } from './categories.js';
-import { pageHeader } from './components.js';
+import { pageHeader, settingField, invalid, navRow } from './components.js';
 
-/** Eingabefeld, das beim Verlassen prüft und speichert */
-function settingField({ id, label, value, unit, inputmode = 'text', placeholder = '', hint = null, onSave }) {
-  const input = h('input', {
-    class: 'field', id, type: 'text', inputmode, autocomplete: 'off', value, placeholder,
-    enterkeyhint: 'done',
-    onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } },
-    onchange: async () => {
-      const result = await onSave(input.value.trim());
-      if (result === false) { input.value = value; return; } // ungültig → alter Wert
-      if (typeof result === 'string') input.value = result;   // schön formatiert
-      value = input.value;
+// ---------- Unterseite Überstunden ----------
+
+/** Übertrag und Anzeigeart der Überstunden */
+export function openHoursSettings(onClose) {
+  const { body } = openSheet({ title: 'Überstunden', onClose });
+  const formatButtons = [['decimal', '12,5 Std.'], ['hm', '12:30 Std.']].map(([v, l]) => h('button', {
+    type: 'button',
+    'aria-pressed': String(hoursFormat() === v),
+    onclick: async (e) => {
+      const btn = e.currentTarget; // nach dem await ist currentTarget nicht mehr gesetzt
+      await updateSettings({ hoursFormat: v }, { silent: true });
+      for (const b of btn.parentElement.children) b.setAttribute('aria-pressed', String(b === btn));
+      startInput.value = hoursToInput(state.settings.hoursStartMinutes || 0);
       toast('Gespeichert');
     },
+  }, l));
+  const fields = settingField({
+    id: 'set-hours-start',
+    label: 'Übertrag (Stand vor dem ersten erfassten Monat)',
+    unit: 'Std.',
+    inputmode: 'text',
+    value: hoursToInput(state.settings.hoursStartMinutes || 0),
+    hint: 'Hattest du schon Überstunden, bevor du hier Monate erfasst? Dann trag den Stand hier ein, z. B. 12,5 oder 12:30. '
+      + 'Minusstunden mit Minus davor, z. B. -4.',
+    onSave: async (v) => {
+      const minutes = v ? parseHours(v, { allowSign: true }) : 0;
+      if (minutes == null || Math.abs(minutes) > 10000 * 60) return invalid('Bitte eine Stundenzahl eingeben, z. B. 12,5, 12:30 oder -4.');
+      await updateSettings({ hoursStartMinutes: minutes }, { silent: true });
+      return hoursToInput(minutes);
+    },
   });
-  return [
-    h('label', { class: 'lbl', for: id }, label),
-    unit ? h('div', { class: 'unit-field' }, input, h('span', { class: 'unit' }, unit)) : input,
-    hint ? h('p', { class: 'hint' }, hint) : null,
-  ];
-}
-
-function invalid(msg) {
-  alertDialog({ title: 'Ungültige Eingabe', text: msg });
-  return false;
-}
-
-/** Zeile wie in den iPhone-Einstellungen: Titel links, Wert rechts, Pfeil */
-function navRow(label, value, onClick, { id = null } = {}) {
-  return h('button', { type: 'button', class: 'row nav-row', id, onclick: onClick },
-    h('span', { class: 'nav-label' }, label),
-    value != null ? h('span', { class: 'nav-value' }, value) : null,
-    h('span', { class: 'chevron', 'aria-hidden': 'true' }, '›'));
+  const startInput = fields[1].querySelector('input');
+  mount(body,
+    h('section', { class: 'card' }, fields),
+    h('h2', { class: 'section-title' }, 'Stunden anzeigen als'),
+    h('div', { class: 'segmented', role: 'group', 'aria-label': 'Stunden anzeigen als' }, formatButtons),
+    h('p', { class: 'hint' }, 'Eingeben kannst du immer beides: 172,5 oder 172:30.'));
 }
 
 // ---------- Hauptseite ----------
@@ -101,6 +107,10 @@ export function render(root) {
       navRow('Kategorien Einnahmen', String(categoriesFor('income').length), () => openCategoryList('income', refresh), { id: 'nav-cat-income' }),
       navRow('Kategorien Ausgaben', String(categoriesFor('expense').length), () => openCategoryList('expense', refresh), { id: 'nav-cat-expense' })),
 
+    h('h2', { class: 'section-title' }, 'Überstunden'),
+    h('div', { class: 'rows group' },
+      navRow('Übertrag & Anzeige', `Übertrag ${formatHours(s.hoursStartMinutes || 0, { signed: true })}`, () => openHoursSettings(refresh), { id: 'nav-hours' })),
+
     h('h2', { class: 'section-title' }, 'Datensicherung'),
     h('section', { class: 'card' },
       h('p', { class: 'setting-text' },
@@ -123,6 +133,7 @@ export function render(root) {
     h('section', { class: 'card' },
       h('div', { class: 'kv' }, h('span', null, 'Version'), h('span', null, APP_STAGE ? `${APP_VERSION} (${APP_STAGE})` : APP_VERSION)),
       h('div', { class: 'kv' }, h('span', null, 'Gespeicherte Buchungen'), h('span', null, String(state.bookings.length))),
+      h('div', { class: 'kv' }, h('span', null, 'Erfasste Monate (Überstunden)'), h('span', null, String(state.hours.length))),
       h('div', { class: 'kv' }, h('span', null, 'Speicher'), storageInfo)),
   );
 }
@@ -135,7 +146,7 @@ export async function doExport(btn) {
     const { file, counts } = await createBackupFile();
     const share = prefersShare(file);
     const text = h('div', null,
-      h('p', null, `${counts.bookings} Buchungen und ${counts.receipts} Belegfotos · ${formatSize(file.size)}`),
+      h('p', null, `${counts.bookings} Buchungen, ${counts.hours} Monate Überstunden und ${counts.receipts} Belegfotos · ${formatSize(file.size)}`),
       h('p', null, share
         ? 'Tippe auf „Sichern“ und wähle dann „In Dateien sichern“ → iCloud Drive. So liegt das Backup nicht nur auf dem Handy.'
         : 'Die Datei wird in deinen Download-Ordner geladen. Bewahre sie an einem sicheren Ort auf.'));
@@ -180,8 +191,8 @@ async function doImport(file) {
   const mode = await choiceDialog({
     title: 'Backup einspielen',
     text: h('div', null,
-      h('p', null, `Backup vom ${date}: ${backup.bookings.length} Buchungen, ${backup.receipts.length} Belegfotos.`),
-      h('p', null, h('strong', null, 'Zusammenführen: '), 'Buchungen aus dem Backup kommen dazu, nichts wird doppelt. Das jeweils Neuere gilt.'),
+      h('p', null, `Backup vom ${date}: ${backup.bookings.length} Buchungen, ${backup.hours.length} Monate Überstunden, ${backup.receipts.length} Belegfotos.`),
+      h('p', null, h('strong', null, 'Zusammenführen: '), 'Buchungen und Monate aus dem Backup kommen dazu, nichts wird doppelt. Das jeweils Neuere gilt.'),
       h('p', null, h('strong', null, 'Ersetzen: '), 'Alle Daten auf diesem Gerät werden gelöscht und durch das Backup ersetzt.')),
     buttons: [
       { label: 'Zusammenführen (empfohlen)', value: 'merge', kind: 'primary' },
@@ -191,10 +202,10 @@ async function doImport(file) {
   });
   if (!mode) return;
 
-  if (mode === 'replace' && state.bookings.length) {
+  if (mode === 'replace' && (state.bookings.length || state.hours.length)) {
     const ok = await confirmDialog({
       title: 'Wirklich ersetzen?',
-      text: `Die ${state.bookings.length} Buchungen auf diesem Gerät werden gelöscht und durch das Backup ersetzt.`,
+      text: `Die ${state.bookings.length} Buchungen und ${state.hours.length} Monate Überstunden auf diesem Gerät werden gelöscht und durch das Backup ersetzt.`,
       confirmLabel: 'Ja, ersetzen',
       danger: true,
     });
@@ -204,8 +215,10 @@ async function doImport(file) {
   try {
     const r = await applyBackup(backup, mode);
     const lines = mode === 'replace'
-      ? [`${r.added} Buchungen übernommen.`]
-      : [`${r.added} neu, ${r.updated} aktualisiert, ${r.removed} entfernt.`, `Jetzt gespeichert: ${state.bookings.length} Buchungen.`];
+      ? [`${r.added} Buchungen und ${r.hours} Monate Überstunden übernommen.`]
+      : [`Buchungen: ${r.added} neu, ${r.updated} aktualisiert, ${r.removed} entfernt.`,
+        `Überstunden: ${r.hours} ${r.hours === 1 ? 'Monat' : 'Monate'} neu oder aktualisiert.`,
+        `Jetzt gespeichert: ${state.bookings.length} Buchungen, ${state.hours.length} Monate Überstunden.`];
     if (r.skipped) lines.push(`${r.skipped} fehlerhafte Einträge wurden übersprungen.`);
     alertDialog({ title: 'Backup eingespielt', text: h('div', null, lines.map((l) => h('p', null, l))) });
   } catch (err) {

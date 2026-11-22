@@ -7,6 +7,7 @@ import { formatMoney, MONTHS, todayISO } from '../format.js';
 import { backupDue, snoozeUntil } from '../notices.js';
 import { doExport } from './settings.js';
 import { bookingRow, pageHeader } from './components.js';
+import { balanceCard, missingHint } from './hours.js';
 
 let selectedYear = new Date().getFullYear();
 
@@ -62,6 +63,10 @@ export function render(root) {
         h('span', { class: 'kpi-sep' }),
         kpiRow('Saldo', 'balance', balance(monthSums.balance), balance(yearSums.balance), 'kpi-total')),
       big ? h('p', { class: 'kpi-note' }, 'Auf volle Euro gerundet – genaue Beträge in der Auswertung.') : null),
+
+    // Überstunden: aktueller Stand, fehlende Monate
+    balanceCard({ onClick: () => { location.hash = '#/stunden'; } }),
+    missingHint(),
 
     backupNotice(),
 

@@ -43,6 +43,7 @@ export async function createBackupFile() {
     settings: state.settings,
     categories: state.categories,
     bookings: state.bookings,
+    hours: state.hours,
     tombstones,
   };
   // Datei in Teilen zusammensetzen – spart Arbeitsspeicher bei vielen Fotos
@@ -63,16 +64,18 @@ export async function createBackupFile() {
 
   const name = `${APP_ID}-backup-${todayISO()}.json`;
   const file = new File(parts, name, { type: 'application/json' });
-  return { file, counts: { bookings: state.bookings.length, receipts: receipts.length } };
+  return { file, counts: { bookings: state.bookings.length, hours: state.hours.length, receipts: receipts.length } };
 }
 
 export async function markBackupDone() {
-  await updateLocal({ lastBackupAt: nowISO(), bookingsAtLastBackup: state.bookings.length });
+  await updateLocal({ lastBackupAt: nowISO(), bookingsAtLastBackup: state.bookings.length, hoursAtLastBackup: state.hours.length });
 }
 
 // ---------- Import: Datei lesen und prüfen ----------
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+const MAX_MONTH_MINUTES = 744 * 60; // 31 Tage × 24 Stunden
 
 export async function readBackupFile(file) {
   let data;
@@ -128,6 +131,22 @@ function sanitize(data) {
       updatedAt: str(c.updatedAt) || nowISO(),
     }));
 
+  // Überstunden: ID folgt immer aus dem Monat ("h-JJJJ-MM")
+  const minutesOk = (m) => Number.isSafeInteger(m) && m >= 0 && m <= MAX_MONTH_MINUTES;
+  const hours = [];
+  for (const x of arr(data.hours)) {
+    if (!x || !MONTH_RE.test(x.month) || !minutesOk(x.workedMinutes) || !minutesOk(x.paidMinutes)) { skipped++; continue; }
+    hours.push({
+      id: `h-${x.month}`,
+      month: x.month,
+      workedMinutes: x.workedMinutes,
+      paidMinutes: x.paidMinutes,
+      note: str(x.note),
+      createdAt: str(x.createdAt) || nowISO(),
+      updatedAt: str(x.updatedAt) || nowISO(),
+    });
+  }
+
   const receipts = arr(data.receipts).filter((r) => r && typeof r.id === 'string' && typeof r.data === 'string');
   const tombstones = arr(data.tombstones).filter((t) => t && typeof t.id === 'string' && typeof t.deletedAt === 'string');
 
@@ -139,6 +158,8 @@ function sanitize(data) {
       const v = data.settings[key];
       if (v !== undefined && typeof v === typeof DEFAULT_SETTINGS[key]) settings[key] = v;
     }
+    if (!Number.isSafeInteger(settings.hoursStartMinutes)) settings.hoursStartMinutes = 0;
+    if (!['decimal', 'hm'].includes(settings.hoursFormat)) settings.hoursFormat = 'decimal';
   }
 
   return {
@@ -146,6 +167,7 @@ function sanitize(data) {
     format: data.format,
     bookings,
     categories,
+    hours,
     receipts,
     tombstones,
     settings,
@@ -155,7 +177,7 @@ function sanitize(data) {
 
 // ---------- Import: anwenden ----------
 
-const STORES = ['bookings', 'categories', 'receipts', 'tombstones', 'meta'];
+const STORES = ['bookings', 'categories', 'hours', 'receipts', 'tombstones', 'meta'];
 
 export async function applyBackup(backup, mode) {
   // Fotos vorher umwandeln (in der Datenbank-Transaktion darf nicht gewartet werden)
@@ -177,14 +199,15 @@ export async function applyBackup(backup, mode) {
   let result;
   if (mode === 'replace') {
     await db.write(STORES, (s) => {
-      for (const name of ['bookings', 'categories', 'receipts', 'tombstones']) s[name].clear();
+      for (const name of ['bookings', 'categories', 'hours', 'receipts', 'tombstones']) s[name].clear();
       for (const b of backup.bookings) s.bookings.put(b);
       for (const c of backup.categories) s.categories.put(c);
+      for (const x of backup.hours) s.hours.put(x);
       for (const r of receipts) s.receipts.put(r);
       for (const t of backup.tombstones) s.tombstones.put(t);
       if (backup.settings) s.meta.put({ key: 'settings', value: backup.settings });
     });
-    result = { added: backup.bookings.length, updated: 0, removed: 0 };
+    result = { added: backup.bookings.length, updated: 0, removed: 0, hours: backup.hours.length };
   } else {
     result = await merge(backup, receipts);
   }
@@ -231,6 +254,7 @@ async function merge(backup, receipts) {
   };
   const bookings = mergeList(state.bookings, backup.bookings);
   const cats = mergeList(state.categories, backup.categories);
+  const hours = mergeList(state.hours, backup.hours);
 
   // Fotos (ändern sich nie – ein neues Foto bekommt eine neue ID)
   const haveR = new Set(localReceiptIds);
@@ -241,7 +265,7 @@ async function merge(backup, receipts) {
   const takeSettings = backup.settings && (backup.settings.updatedAt || '') > (state.settings.updatedAt || '');
 
   await db.write(STORES, (s) => {
-    for (const [name, plan] of [['bookings', bookings], ['categories', cats]]) {
+    for (const [name, plan] of [['bookings', bookings], ['categories', cats], ['hours', hours]]) {
       for (const x of plan.put) s[name].put(x);
       for (const id of plan.del) s[name].delete(id);
     }
@@ -251,5 +275,10 @@ async function merge(backup, receipts) {
     if (takeSettings) s.meta.put({ key: 'settings', value: backup.settings });
   });
 
-  return { added: bookings.added, updated: bookings.updated, removed: bookings.removed };
+  return {
+    added: bookings.added,
+    updated: bookings.updated,
+    removed: bookings.removed,
+    hours: hours.added + hours.updated, // neue oder geänderte Monate
+  };
 }

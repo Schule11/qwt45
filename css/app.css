@@ -36,6 +36,8 @@
   --chart-current: #2b5fd9;
   --chart-prev: #9b978f;
   --chart-grid: #ebe9e4;
+  --chart-plus: #2b5fd9;   /* Überstunden: mehr gearbeitet */
+  --chart-minus: #f2949e;  /* weniger gearbeitet */
 
   /* Liquid Glass (iOS 26/27): durchscheinende Flächen für Menüleiste & Knöpfe */
   --glass: rgba(255, 255, 255, 0.7);
@@ -78,6 +80,8 @@
     --chart-current: #5b8cff;
     --chart-prev: #8a8a90;
     --chart-grid: #2a2a2d;
+    --chart-plus: #5b8cff;
+    --chart-minus: #e0607a;
     --shadow-fab: 0 6px 20px rgba(0, 0, 0, 0.5);
     --glass: rgba(44, 44, 46, 0.72);
     --glass-line: rgba(255, 255, 255, 0.1);
@@ -114,6 +118,8 @@
   --chart-current: #5b8cff;
   --chart-prev: #8a8a90;
   --chart-grid: #2a2a2d;
+  --chart-plus: #5b8cff;
+  --chart-minus: #e0607a;
   --shadow-fab: 0 6px 20px rgba(0, 0, 0, 0.5);
   --glass: rgba(44, 44, 46, 0.72);
   --glass-line: rgba(255, 255, 255, 0.1);
@@ -1142,6 +1148,10 @@ dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
 .chart-key.k-expense { background: var(--chart-expense); }
 .chart-key.k-current { background: var(--chart-current); }
 .chart-key.k-prev { background: var(--chart-prev); }
+.chart-key.k-plus { background: var(--chart-plus); }
+.chart-key.k-minus { background: var(--chart-minus); }
+.bar-plus { fill: var(--chart-plus); }
+.bar-minus { fill: var(--chart-minus); }
 .chart-key.line { width: 16px; height: 3px; border-radius: 2px; }
 .chart-key.k-prev.line { background: repeating-linear-gradient(90deg, var(--chart-prev) 0 5px, transparent 5px 8px); }
 .chart-note { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); }
@@ -1162,3 +1172,54 @@ dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
 .share-fill { height: 100%; border-radius: 3px; }
 .share-fill.income { background: var(--chart-income); }
 .share-fill.expense { background: var(--chart-expense); }
+
+/* ---------- Überstunden ---------- */
+
+.hours-card {
+  display: grid;
+  gap: 2px;
+  padding: 16px 18px 18px;
+}
+
+.hours-link {
+  position: relative;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  padding-right: 40px;
+}
+
+.hours-link:active { background: var(--surface-2); }
+.hours-link .chevron { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
+.hours-label { font-size: 15px; font-weight: 700; color: var(--muted); }
+.hours-big { font-size: 34px; font-weight: 780; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.hours-big.neg { color: var(--expense); }
+.hours-sub { font-size: 14.5px; color: var(--muted); }
+
+#hours-add { margin-bottom: 8px; }
+.hours-card + .hint-row { margin-top: 0; }
+
+.hours-row .row-main { min-width: 0; }
+.hours-row .row-sub { white-space: normal; display: block; }
+#hours-add + .card { margin-top: 16px; }
+.hours-amts { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.hours-amts .amt { font-size: 17px; }
+.hours-balance { font-size: 13.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hours-row.missing .row-title { color: var(--muted); }
+.hours-row.missing .amt { font-size: 24px; color: var(--accent-ink); }
+
+.month-pick { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+.month-pick .field:disabled { opacity: 0.7; }
+.hours-input { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.hours-preview {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  font-size: 16px;
+}
+
+.hours-preview .kv { padding: 3px 0; }
+.hours-preview strong { font-variant-numeric: tabular-nums; }

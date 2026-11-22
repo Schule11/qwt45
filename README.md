@@ -1,7 +1,11 @@
 # Haushaltsbuch
 
-Eine kleine App für den eigenen Haushalt: tägliche **Einnahmen und Ausgaben** erfassen und für jeden Monat
-und jedes Jahr sehen, was hereinkam und was ausgegeben wurde. Dazu kommen die **Überstunden**.
+Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
+
+1. **Einnahmen und Ausgaben** des Alltags erfassen – und für jeden Monat und jedes Jahr sehen,
+   was hereinkam, was ausgegeben wurde und wohin das Geld ging.
+2. **Überstunden** im Blick behalten: Je Monat trägst du die tatsächlich gearbeiteten und die ausbezahlten
+   Stunden ein, die App zeigt dir jederzeit, wie viele Überstunden du noch hast.
 
 - läuft im Browser und lässt sich auf dem iPhone wie eine App installieren
 - funktioniert auch ohne Internet
@@ -25,23 +29,77 @@ und jedes Jahr sehen, was hereinkam und was ausgegeben wurde. Dazu kommen die **
 > Trage alles nur in der installierten App ein.
 >
 > **Löschst du die App vom Home-Bildschirm, löscht das iPhone auch ihre Daten.**
-> Mach deshalb vorher immer ein Backup (*Einstellungen → Backup erstellen*).
+> Mach deshalb vorher immer ein Backup (Abschnitt 4).
 
-## 2. Backup
+## 2. Einnahmen und Ausgaben
 
-Deine Daten liegen nur auf dem Handy. *Einstellungen → Backup erstellen → Sichern …* und im Teilen-Menü
-**In Dateien sichern → iCloud Drive** wählen. Die Datei heißt z. B. `haushaltsbuch-backup-2026-11-22.json`.
-Einspielen: *Einstellungen → Backup einspielen*.
+| Bereich | Was du dort machst |
+|---|---|
+| **+ (runder Knopf neben der Menüleiste)** | Neue Buchung: Ausgabe oder Einnahme, Betrag, Kategorie, Beschreibung, Datum, Beleg (Foto oder PDF, optional). Oben rechts ✓ speichert, ✕ bricht ab. |
+| **Übersicht** | Einnahmen, Ausgaben und Saldo für den aktuellen Monat und das gewählte Jahr, dazu dein Überstunden-Stand und die zuletzt erfassten Buchungen |
+| **Buchungen** | Alle Buchungen nach Monaten (mit Saldo je Monat); Suche und Filter nach Jahr, Art und Kategorie – mit Filter erscheint die Summe der Treffer; antippen zum Bearbeiten oder Löschen |
+| **Auswertung** | Umschalter **Monat \| Jahr**. *Monat:* Ergebnis und Ausgaben/Einnahmen nach Kategorie (größte zuerst, mit Anteil). *Jahr:* Diagramm je Monat, Monatstabelle (ein Tipp auf einen Monat öffnet ihn), Saldo im Vergleich zum Vorjahr, Kategorien, Export als PDF und CSV |
+| **Einstellungen** (Zahnrad oben rechts) | Kategorien, Überstunden (Übertrag, Anzeige), Backup, hell/dunkel |
+
+- **Saldo** = Einnahmen minus Ausgaben. Ein Minus zeigt die App rot.
+- Neue Buchungen starten als **Ausgabe** (das Häufigste im Alltag); die zuletzt gewählte Art merkt sich die App.
+- **Kategorien** sind vorbelegt (z. B. Gehalt, Lebensmittel, Miete & Wohnen) und unter *Einstellungen → Kategorien*
+  frei änderbar: umbenennen, sortieren, neue anlegen, löschen (die Buchungen wandern dann in eine andere Kategorie).
+  Im Formular stehen die zuletzt benutzten Kategorien oben.
+- Ein Tipp auf eine Kategorie in der Auswertung zeigt alle Buchungen dieser Kategorie im gewählten Monat bzw. Jahr.
+
+## 3. Überstunden
+
+Unten in der Menüleiste auf **Stunden** tippen. Auf diesem Bildschirm erfasst der **+**-Knopf einen Monat
+(statt einer Buchung).
+
+1. **Monat erfassen:** Monat wählen, die **tatsächlich gearbeiteten** Stunden und die **ausbezahlten** Stunden
+   (laut Lohnabrechnung) eintragen, optional eine Notiz (z. B. „3 Tage Urlaub“).
+   Die App schlägt den richtigen Monat vor (meist den Vormonat) und übernimmt die ausbezahlten Stunden vom
+   letzten erfassten Monat – bitte mit der Lohnabrechnung vergleichen.
+2. Schon beim Tippen zeigt das Formular die **Überstunden des Monats** und den **Stand danach**.
+
+So rechnet die App:
+
+- **Überstunden des Monats** = gearbeitet − ausbezahlt
+- **Stand** = Übertrag + alle Monate zusammen
+- **Freizeitausgleich** (Überstunden abgebaut): Du hast weniger gearbeitet als ausbezahlt – der Stand sinkt von selbst.
+- **Überstunden ausbezahlt bekommen:** Sie gehören zu den ausbezahlten Stunden des Monats – der Stand sinkt entsprechend.
+- **Übertrag:** Hattest du schon Überstunden, bevor du hier Monate erfasst? Trag den Stand unter
+  *Einstellungen → Überstunden* ein (Minusstunden mit Minus davor, z. B. `-4`).
+
+Eingeben kannst du Stunden als `172,5` oder `172:30`. Ob die App sie als **12,5 Std.** oder **12:30 Std.** anzeigt,
+stellst du unter *Einstellungen → Überstunden* ein.
+
+Der Bildschirm zeigt den aktuellen Stand, je Jahr die Summen (gearbeitet, ausbezahlt, Überstunden, Stand am
+Jahresende), ein Diagramm und alle Monate mit laufendem Stand. **Fehlt ein Monat** (z. B. der Vormonat), erscheint
+ein Hinweis – auch auf der Übersicht; ein Tipp darauf öffnet genau diesen Monat. Einen Monat korrigierst oder löschst
+du, indem du ihn in der Liste antippst.
+
+**Export:** Alle Monate mit Stand als **PDF** (z. B. für ein Gespräch mit dem Arbeitgeber) oder **CSV**.
+
+## 4. Backup (bitte regelmäßig!)
+
+Deine Daten liegen nur auf dem Handy. Die App erinnert dich regelmäßig an ein Backup
+(einstellbar unter *Einstellungen → An Backup erinnern*).
+
+**Backup erstellen:** *Einstellungen → Backup erstellen → Sichern …* und im Teilen-Menü
+**In Dateien sichern → iCloud Drive** wählen. Die Datei heißt z. B. `haushaltsbuch-backup-2026-11-22.json` und
+enthält alle Buchungen, Überstunden, Kategorien, Einstellungen und Belegfotos.
+
+**Backup einspielen** (neues Handy, nach Neuinstallation, am Laptop): *Einstellungen → Backup einspielen*.
+**Zusammenführen** (empfohlen): Neues kommt dazu, nichts wird doppelt, das jeweils Neuere gilt.
+**Alles ersetzen**: Die Daten auf diesem Gerät werden durch das Backup ersetzt.
 
 Backups der Hundeschule-App lassen sich hier nicht einspielen (und umgekehrt) – die App erkennt sie und sagt Bescheid.
 
-## 3. Updates
+## 5. Updates
 
 Neue Versionen werden in dieses GitHub-Repository hochgeladen. Die App holt sie sich beim nächsten Öffnen
 von selbst und zeigt kurz „App aktualisiert“ an. Deine Daten bleiben dabei erhalten.
 Falls nichts passiert: die App im App-Umschalter wegwischen und neu öffnen.
 
-## 4. Am Laptop lokal starten (optional)
+## 6. Am Laptop lokal starten (optional)
 
 Nur nötig, wenn du am Code etwas ausprobieren willst. Im Terminal im Projektordner:
 
@@ -58,6 +116,25 @@ Webadresse erlauben.)
 ## Für später: Aufbau des Codes
 
 Reines HTML, CSS und JavaScript, ohne Build-Werkzeuge und ohne fremde Bibliotheken.
+
+| Datei | Inhalt |
+|---|---|
+| `index.html`, `css/app.css` | Grundgerüst und Gestaltung (Farben als Variablen, hell/dunkel) |
+| `js/app.js` | Start, Navigation, +-Knopf, Updates |
+| `js/config.js` | App-Kennung (`APP_ID`), Version, Backup-Format |
+| `js/db.js` | Datenbank im Browser (IndexedDB), Versionen und Umbauten |
+| `js/data.js` | Buchungen, Kategorien, Überstunden, Einstellungen; Beträge immer in **Cent**, Stunden in **Minuten** (ganze Zahlen) |
+| `js/defaults.js` | Vorbelegte Kategorien und Einstellungen |
+| `js/hours.js` | Überstunden: Rechnen (Stand, Jahre, fehlende Monate), Eingabe lesen (`172,5`/`172:30`), Anzeige |
+| `js/yearReport.js`, `js/exports.js`, `js/pdf.js` | Auswertung je Monat/Jahr, CSV, PDF (auch für Überstunden) |
+| `js/backup.js` | Backup erstellen, prüfen, zusammenführen |
+| `js/notices.js` | Backup-Erinnerung |
+| `js/views/*.js` | Die Bildschirme (`hours.js`: Überstunden und Formular „Monat erfassen“, `form.js`: Buchung) |
+| `js/views/charts.js` | Diagramme (SVG, ohne Bibliothek; Farben in `css/app.css` als `--chart-…`) |
+| `sw.js` | Offline-Modus (Liste aller Dateien) |
+
+Überstunden werden je Monat mit fester ID `h-JJJJ-MM` gespeichert. So entsteht beim Zusammenführen zweier Geräte
+nie ein Monat doppelt – es gilt der zuletzt geänderte.
 
 ### Getrennt von anderen Apps
 
@@ -87,3 +164,7 @@ machen, die App unter der neuen Adresse neu zum Home-Bildschirm hinzufügen und 
 
 **Bei jeder Änderung** die Versionsnummer in `js/config.js` (`APP_VERSION`) **und** `sw.js` (`VERSION`) erhöhen,
 damit Handys die neue Version laden. Neue Dateien in die Liste in `sw.js` eintragen.
+
+Für neue Bereiche in der Datenbank `DB_VERSION` in `js/db.js` erhöhen und dort einen Block
+`if (oldVersion < 2) { … }` ergänzen – vorhandene Daten bleiben erhalten. Ändert sich der Aufbau der
+Backup-Datei, `BACKUP_FORMAT` in `js/config.js` erhöhen.

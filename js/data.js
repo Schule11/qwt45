@@ -14,10 +14,15 @@ import { DEFAULT_SETTINGS, defaultCategoryRecords } from './defaults.js';
  *   receiptId: ID des Belegfotos oder null,
  *   createdAt, updatedAt
  * }
+ *
+ * Überstunden (ein Eintrag je Monat, feste ID "h-JJJJ-MM" – so entstehen beim
+ * Zusammenführen zweier Geräte keine doppelten Monate):
+ * { id, month: 'JJJJ-MM', workedMinutes, paidMinutes, note, createdAt, updatedAt }
  */
 export const state = {
   bookings: [],
   categories: [],
+  hours: [],
   settings: { ...DEFAULT_SETTINGS },
   local: {}, // nur für dieses Gerät (z. B. Zeitpunkt des letzten Backups)
 };
@@ -62,9 +67,10 @@ export function replaceInState(list, item) {
 const DATA_VERSION = 1;
 
 export async function load() {
-  let [bookings, categories, meta] = await Promise.all([
+  let [bookings, categories, hours, meta] = await Promise.all([
     db.getAll('bookings'),
     db.getAll('categories'),
+    db.getAll('hours'),
     db.getAll('meta'),
   ]);
   const m = Object.fromEntries(meta.map((x) => [x.key, x.value]));
@@ -76,6 +82,7 @@ export async function load() {
 
   state.bookings = bookings;
   state.categories = categories;
+  state.hours = hours;
   state.settings = { ...DEFAULT_SETTINGS, ...(m.settings || {}) };
   state.local = m.local || {};
 
@@ -263,6 +270,40 @@ export async function deleteBooking(id) {
     }
   });
   state.bookings = state.bookings.filter((b) => b.id !== id);
+  emitChange();
+}
+
+// ---------- Überstunden ----------
+
+/** Monat speichern (neu oder geändert): ym = "JJJJ-MM" */
+export async function saveHours(ym, { workedMinutes, paidMinutes, note = '' }) {
+  const id = `h-${ym}`;
+  const existing = state.hours.find((x) => x.id === id);
+  const now = nowISO();
+  const rec = {
+    id,
+    month: ym,
+    workedMinutes,
+    paidMinutes,
+    note: String(note || '').trim(),
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
+  await db.write(['hours'], (s) => s.hours.put(rec));
+  replaceInState(state.hours, rec);
+  requestPersistentStorage();
+  emitChange();
+  return rec;
+}
+
+export async function deleteHours(ym) {
+  const id = `h-${ym}`;
+  const now = nowISO();
+  await db.write(['hours', 'tombstones'], (s) => {
+    s.hours.delete(id);
+    s.tombstones.put({ id, kind: 'hours', deletedAt: now });
+  });
+  state.hours = state.hours.filter((x) => x.id !== id);
   emitChange();
 }
 

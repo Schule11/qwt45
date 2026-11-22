@@ -22,6 +22,7 @@ function upgrade(db, oldVersion) {
     db.createObjectStore('receipts', { keyPath: 'id' });   // Belegfotos
     db.createObjectStore('tombstones', { keyPath: 'id' }); // Merkzettel für Gelöschtes (fürs Zusammenführen)
     db.createObjectStore('meta', { keyPath: 'key' });      // Einstellungen u. Ä.
+    db.createObjectStore('hours', { keyPath: 'id' });      // Überstunden je Monat
   }
   // Für spätere Erweiterungen: if (oldVersion < 2) { ... }
 }

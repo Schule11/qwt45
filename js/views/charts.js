@@ -219,6 +219,84 @@ export function cumulativeChart({ year, current, previous, lastMonth }) {
     h('p', { class: 'chart-note' }, 'Einnahmen minus Ausgaben, aufsummiert vom Jahresanfang bis zum jeweiligen Monat. Tippe ins Diagramm für die Werte.'));
 }
 
+// ---------- Überstunden pro Monat ----------
+
+/**
+ * Säulen nach oben (Überstunden) oder unten (weniger gearbeitet als ausbezahlt).
+ * rows: erfasste Monate des Jahres [{ month, diff, balance, rec }]; fmt: Minuten → Text
+ */
+export function hoursChart(rows, { year, fmt }) {
+  const byMonth = new Map(rows.map((r) => [Number(r.month.slice(5)) - 1, r]));
+  const draw = (W, tip) => {
+    const H = 170;
+    const pad = { l: 40, r: 6, t: 10, b: 24 };
+    const iw = W - pad.l - pad.r;
+    const ih = H - pad.t - pad.b;
+    const vals = rows.map((r) => r.diff / 60);
+    let lo = Math.min(0, ...vals);
+    let hi = Math.max(0, ...vals);
+    if (hi === lo) hi = lo + 10;
+    const step = niceStep(hi - lo, 3);
+    lo = Math.floor(lo / step) * step;
+    hi = Math.ceil(hi / step) * step;
+    const y = (v) => pad.t + ih - ((v - lo) / (hi - lo)) * ih;
+    const svg = svgEl('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', 'aria-hidden': 'true' });
+    for (let v = lo; v <= hi + 1e-9; v += step) {
+      svg.append(svgEl('line', { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), class: Math.abs(v) < 1e-9 ? 'chart-base' : 'chart-grid' }));
+      const t = svgEl('text', { x: pad.l - 6, y: y(v) + 4, 'text-anchor': 'end', class: 'chart-tick' });
+      t.textContent = num.format(v);
+      svg.append(t);
+    }
+    const gw = iw / 12;
+    const hl = svgEl('rect', { x: pad.l, y: pad.t, width: gw, height: ih + pad.b, rx: 6, class: 'chart-hl' });
+    svg.append(hl);
+    const bw = Math.min(18, gw - 8);
+    const shows = [];
+    for (let i = 0; i < 12; i += 1) {
+      const gx = pad.l + i * gw;
+      const cx = gx + gw / 2;
+      const r = byMonth.get(i);
+      if (r && r.diff) {
+        const v = r.diff / 60;
+        const top = y(Math.max(0, v));
+        const hgt = Math.abs(y(v) - y(0));
+        const d = v > 0 ? barPath(cx - bw / 2, top, bw, hgt) : `M${cx - bw / 2},${y(0)} H${cx + bw / 2} V${y(0) + hgt} H${cx - bw / 2} Z`;
+        svg.append(svgEl('path', { d, class: v > 0 ? 'bar-plus' : 'bar-minus' }));
+      }
+      const lbl = svgEl('text', { x: cx, y: H - 7, 'text-anchor': 'middle', class: 'chart-tick' });
+      lbl.textContent = W < 460 ? MONTHS[i][0] : MONTHS[i].slice(0, 3);
+      svg.append(lbl);
+      const hit = svgEl('rect', {
+        x: gx, y: pad.t, width: gw, height: ih + pad.b, class: 'chart-hit', tabindex: 0,
+        'aria-label': r ? `${MONTHS[i]} ${year}: ${fmt(r.diff, true)}, Stand ${fmt(r.balance, true)}` : `${MONTHS[i]} ${year}: nicht erfasst`,
+      });
+      const show = () => {
+        hl.setAttribute('x', gx);
+        if (!r) { showTip(tip, [{ value: 'nicht erfasst', label: '' }], `${MONTHS[i]} ${year}`); return; }
+        showTip(tip, [
+          { key: r.diff < 0 ? 'k-minus' : 'k-plus', value: fmt(r.diff, true), label: 'Überstunden' },
+          { value: fmt(r.rec.workedMinutes), label: 'gearbeitet' },
+          { value: fmt(r.rec.paidMinutes), label: 'ausbezahlt' },
+          { value: fmt(r.balance, true), label: 'Stand' },
+        ], `${MONTHS[i]} ${year}`);
+      };
+      shows.push(show);
+      hit.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(); });
+      hit.addEventListener('click', () => { selected = i; show(); });
+      hit.addEventListener('focus', show);
+      svg.append(hit);
+    }
+    svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') shows[selected](); });
+    shows[selected]();
+    return svg;
+  };
+  let selected = rows.length ? Number(rows[rows.length - 1].month.slice(5)) - 1 : 0;
+  return h('div', null,
+    legend([{ key: 'k-plus', label: 'mehr gearbeitet' }, { key: 'k-minus', label: 'weniger gearbeitet' }]),
+    chartShell(`Überstunden pro Monat ${year}`, draw),
+    h('p', { class: 'chart-note' }, 'Achse in Stunden. Tippe auf einen Monat, um seine Werte zu sehen.'));
+}
+
 /** Dünner Anteilsbalken (z. B. Anteil einer Kategorie an allen Einnahmen) */
 export function shareBar(part, total, kind) {
   const pct = total > 0 ? Math.max(1, Math.round((part / total) * 100)) : 0;

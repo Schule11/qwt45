@@ -2,7 +2,8 @@
 
 import { categoryName } from './data.js';
 import { yearReport } from './yearReport.js';
-import { formatMoney, formatSigned, formatBalance, formatDate, todayISO, MONTHS } from './format.js';
+import { formatMoney, formatSigned, formatBalance, formatDate, todayISO, monthLabel, MONTHS } from './format.js';
+import { hoursRows, startBalance, formatHours, hoursToInput } from './hours.js';
 import { Pdf } from './pdf.js';
 
 // ---------- CSV ----------
@@ -209,4 +210,92 @@ export function footer(pdf, label, M, R) {
     pdf.text(label, M, pdf.H - 28, { size: 8, color: GREY });
     pdf.text(`Seite ${i + 1} von ${total}`, R, pdf.H - 28, { size: 8, color: GREY, align: 'right' });
   }
+}
+
+// ---------- Überstunden ----------
+
+/** Alle erfassten Monate mit Differenz und laufendem Stand */
+export function hoursCsv() {
+  const rows = [['Monat', 'Gearbeitet (Std.)', 'Ausbezahlt (Std.)', 'Überstunden (Std.)', 'Stand (Std.)', 'Notiz'].map(textCell)];
+  // Zahlen immer als Dezimalzahl mit Komma – damit Excel/Numbers damit rechnen können
+  const num = (m) => hoursToInput(m, 'decimal');
+  rows.push([textCell('Übertrag'), '', '', '', num(startBalance()), '']);
+  for (const r of hoursRows()) {
+    rows.push([textCell(monthLabel(r.month)), num(r.rec.workedMinutes), num(r.rec.paidMinutes), num(r.diff), num(r.balance), textCell(r.rec.note)]);
+  }
+  return csvFile(rows, `haushaltsbuch-ueberstunden-${todayISO()}.csv`);
+}
+
+/** Übersicht aller Monate als PDF (z. B. für ein Gespräch mit dem Arbeitgeber) */
+export function hoursPdf() {
+  const rows = hoursRows();
+  const pdf = new Pdf();
+  const M = 48;
+  const R = pdf.W - M;
+  const BOTTOM = pdf.H - 60;
+  const cols = [R - 300, R - 210, R - 110, R]; // rechte Kanten: gearbeitet, ausbezahlt, Überstunden, Stand
+  const fmt = (m, signed = false) => formatHours(m, { signed, unit: false });
+  let y = M + 14;
+
+  pdf.text('Überstunden', M, y, { size: 18, bold: true });
+  y += 17;
+  const last = rows[rows.length - 1];
+  pdf.text(rows.length
+    ? `${monthLabel(rows[0].month)} bis ${monthLabel(last.month)} · erstellt am ${formatDate(todayISO())}`
+    : `erstellt am ${formatDate(todayISO())}`, M, y, { size: 9, color: GREY });
+  y += 20;
+
+  const balance = last ? last.balance : startBalance();
+  pdf.rect(M, y, R - M, 40, { fill: [0.955, 0.95, 0.94] });
+  pdf.text(last ? `Stand nach ${monthLabel(last.month)}` : 'Stand', M + 12, y + 25, { size: 11, bold: true });
+  pdf.text(formatHours(balance, { signed: true }), R - 12, y + 25, { size: 13, bold: true, align: 'right', color: balance < 0 ? RED : [0, 0, 0] });
+  y += 40;
+
+  const tableHead = () => {
+    y += 26;
+    pdf.text('Monat', M, y, { size: 8.5, color: GREY });
+    ['Gearbeitet', 'Ausbezahlt', 'Überstunden', 'Stand'].forEach((t, i) => pdf.text(t, cols[i], y, { size: 8.5, color: GREY, align: 'right' }));
+    y += 4;
+    pdf.line(M, y, R, y, { color: LIGHT });
+  };
+  tableHead();
+  y += 2;
+  if (startBalance()) {
+    y += 15;
+    pdf.text('Übertrag', M, y, { size: 10, color: GREY });
+    pdf.text(fmt(startBalance(), true), cols[3], y, { size: 10, align: 'right' });
+  }
+  let year = null;
+  for (const r of rows) {
+    const note = r.rec.note;
+    if (y + (note ? 30 : 18) > BOTTOM) { pdf.addPage(); y = M; tableHead(); year = null; }
+    if (r.month.slice(0, 4) !== year) {
+      year = r.month.slice(0, 4);
+      y += 18;
+      pdf.text(year, M, y, { size: 9.5, bold: true });
+    }
+    y += 15;
+    pdf.text(MONTHS[Number(r.month.slice(5)) - 1], M, y, { size: 10 });
+    pdf.text(fmt(r.rec.workedMinutes), cols[0], y, { size: 10, align: 'right' });
+    pdf.text(fmt(r.rec.paidMinutes), cols[1], y, { size: 10, align: 'right' });
+    pdf.text(fmt(r.diff, true), cols[2], y, { size: 10, align: 'right', color: r.diff < 0 ? RED : [0, 0, 0] });
+    pdf.text(fmt(r.balance, true), cols[3], y, { size: 10, bold: true, align: 'right', color: r.balance < 0 ? RED : [0, 0, 0] });
+    if (note) {
+      y += 11;
+      pdf.text(note, M + 8, y, { size: 8, color: GREY, maxWidth: R - M - 8 });
+    }
+    y += 2;
+  }
+  if (!rows.length) {
+    y += 24;
+    pdf.text('Noch keine Monate erfasst.', M, y, { size: 11, color: GREY });
+  }
+  y += 26;
+  if (y < BOTTOM) {
+    pdf.text('Alle Angaben in Stunden. Überstunden = gearbeitet − ausbezahlt; Stand = Übertrag + Summe der Monate.', M, y, { size: 8, color: GREY, maxWidth: R - M });
+  }
+
+  footer(pdf, 'Haushaltsbuch · Überstunden', M, R);
+  const blob = pdf.toBlob({ title: 'Überstunden', author: 'Haushaltsbuch' });
+  return new File([blob], `haushaltsbuch-ueberstunden-${todayISO()}.pdf`, { type: 'application/pdf' });
 }
