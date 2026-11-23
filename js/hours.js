@@ -1,8 +1,14 @@
 // Überstunden: Rechnen, Lesen und Anzeigen von Stunden.
 //
-// Je Monat werden die tatsächlich gearbeiteten und die ausbezahlten Stunden
-// erfasst. Überstunden des Monats = gearbeitet − ausbezahlt.
-// Stand = Übertrag (Einstellungen) + Summe aller Monate bis dahin.
+// Je Monat werden erfasst: die tatsächlich gearbeiteten Stunden, die ausbezahlten
+// Stunden (ohne AZK) und die Stunden, die vom Arbeitszeitkonto (AZK) ausbezahlt
+// wurden – auf der Lohnabrechnung steht das als eigener Posten.
+//
+//   Überstunden des Monats  = gearbeitet − ausbezahlt
+//   Veränderung des Stands  = Überstunden des Monats − AZK-Auszahlung
+//   Stand                   = Übertrag (Einstellungen) + Summe aller Veränderungen bis dahin
+//
+// Eine AZK-Auszahlung baut also Überstunden ab, so wie Freizeitausgleich.
 //
 // Gespeichert wird in Minuten (ganze Zahlen) – so gibt es keine Rundungsfehler
 // beim Aufsummieren, egal ob "172,5" oder "172:30" eingegeben wurde.
@@ -89,7 +95,14 @@ export function hoursFor(ym) {
   return state.hours.find((x) => x.month === ym) || null;
 }
 
+/** Überstunden des Monats: gearbeitet − ausbezahlt (ohne AZK) */
 export const diffOf = (rec) => rec.workedMinutes - rec.paidMinutes;
+
+/** Vom Arbeitszeitkonto ausbezahlte Stunden (ältere Einträge ohne Angabe: 0) */
+export const azkOf = (rec) => (Number.isSafeInteger(rec.azkMinutes) ? rec.azkMinutes : 0);
+
+/** Veränderung des Stands in diesem Monat: Überstunden minus AZK-Auszahlung */
+export const changeOf = (rec) => diffOf(rec) - azkOf(rec);
 
 export function startBalance() {
   return Number.isSafeInteger(state.settings.hoursStartMinutes) ? state.settings.hoursStartMinutes : 0;
@@ -97,14 +110,18 @@ export function startBalance() {
 
 /**
  * Alle Monate mit laufendem Stand, älteste zuerst:
- * [{ rec, month, diff, balance }] – balance = Stand am Ende dieses Monats
+ * [{ rec, month, diff, azk, change, balance }]
+ *   diff = Überstunden des Monats, azk = AZK-Auszahlung, change = diff − azk,
+ *   balance = Stand am Ende dieses Monats
  */
 export function hoursRows(list = hoursSorted()) {
   let balance = startBalance();
   return list.map((rec) => {
     const diff = diffOf(rec);
-    balance += diff;
-    return { rec, month: rec.month, diff, balance };
+    const azk = azkOf(rec);
+    const change = diff - azk;
+    balance += change;
+    return { rec, month: rec.month, diff, azk, change, balance };
   });
 }
 
@@ -116,9 +133,9 @@ export function hoursBalance() {
 }
 
 /** Stand am Ende eines Monats, wenn dieser Monat die angegebenen Werte hätte (für die Vorschau im Formular) */
-export function balanceWith(ym, workedMinutes, paidMinutes) {
+export function balanceWith(ym, workedMinutes, paidMinutes, azkMinutes = 0) {
   const others = state.hours.filter((x) => x.month !== ym && x.month <= ym);
-  return others.reduce((s, x) => s + diffOf(x), startBalance()) + (workedMinutes - paidMinutes);
+  return others.reduce((s, x) => s + changeOf(x), startBalance()) + (workedMinutes - paidMinutes - azkMinutes);
 }
 
 /** Jahr: Summen und Stand am Anfang/Ende */
@@ -128,13 +145,15 @@ export function hoursYear(year) {
   const inYear = rows.filter((r) => r.month.startsWith(y));
   const before = rows.filter((r) => r.month < `${y}-01`);
   const startOfYear = before.length ? before[before.length - 1].balance : startBalance();
-  const sum = (key) => inYear.reduce((s, r) => s + r.rec[key], 0);
+  const sum = (fn) => inYear.reduce((s, r) => s + fn(r), 0);
   return {
     year: Number(year),
     rows: inYear,
-    worked: sum('workedMinutes'),
-    paid: sum('paidMinutes'),
-    diff: inYear.reduce((s, r) => s + r.diff, 0),
+    worked: sum((r) => r.rec.workedMinutes),
+    paid: sum((r) => r.rec.paidMinutes),
+    diff: sum((r) => r.diff),     // Überstunden im Jahr
+    azk: sum((r) => r.azk),       // vom AZK ausbezahlt
+    change: sum((r) => r.change), // Veränderung des Stands im Jahr
     startOfYear,
     endOfYear: inYear.length ? inYear[inYear.length - 1].balance : startOfYear,
   };

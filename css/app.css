@@ -1296,6 +1296,7 @@ dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
 .hours-amts { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .hours-amts .amt { font-size: 17px; }
 .hours-balance { font-size: 13.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.hours-azk { font-size: 13.5px; font-weight: 650; color: var(--expense); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .hours-row.missing .row-title { color: var(--muted); }
 .hours-row.missing .amt { font-size: 24px; color: var(--accent-ink); }
 

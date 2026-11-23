@@ -80,30 +80,37 @@ So funktioniert es:
 Unten in der Menüleiste auf **Stunden** tippen. Auf diesem Bildschirm erfasst der **+**-Knopf einen Monat
 (statt einer Buchung).
 
-1. **Monat erfassen:** Monat wählen, die **tatsächlich gearbeiteten** Stunden und die **ausbezahlten** Stunden
-   (laut Lohnabrechnung) eintragen, optional eine Notiz (z. B. „3 Tage Urlaub“).
+1. **Monat erfassen:** Monat wählen und laut Lohnabrechnung eintragen:
+   - die **tatsächlich gearbeiteten** Stunden,
+   - die **ausbezahlten** Stunden (ohne die Auszahlung vom Arbeitszeitkonto),
+   - die Stunden, die **vom Arbeitszeitkonto (AZK) ausbezahlt** wurden – steht auf der Lohnabrechnung als eigener
+     Posten „AZK“; leer lassen, wenn nichts ausbezahlt wurde,
+   - optional eine Notiz (z. B. „3 Tage Urlaub“).
    Die App schlägt den richtigen Monat vor (meist den Vormonat) und übernimmt die ausbezahlten Stunden vom
    letzten erfassten Monat – bitte mit der Lohnabrechnung vergleichen.
-2. Schon beim Tippen zeigt das Formular die **Überstunden des Monats** und den **Stand danach**.
+2. Schon beim Tippen zeigt das Formular die **Überstunden des Monats**, die **AZK-Auszahlung** und den **Stand danach**.
 
 So rechnet die App:
 
 - **Überstunden des Monats** = gearbeitet − ausbezahlt
-- **Stand** = Übertrag + alle Monate zusammen
+- **Stand** = Übertrag + alle Überstunden − alle AZK-Auszahlungen
+  (je Monat ändert sich der Stand also um gearbeitet − ausbezahlt − AZK)
 - **Freizeitausgleich** (Überstunden abgebaut): Du hast weniger gearbeitet als ausbezahlt – der Stand sinkt von selbst.
-- **Überstunden ausbezahlt bekommen:** Sie gehören zu den ausbezahlten Stunden des Monats – der Stand sinkt entsprechend.
+- **Überstunden vom AZK ausbezahlt:** Im Feld „Vom AZK ausbezahlt“ eintragen – der Stand sinkt um diese Stunden.
+  Monate, die vor diesem Feld erfasst wurden, zählen mit 0 AZK und bleiben unverändert.
 - **Übertrag:** Hattest du schon Überstunden, bevor du hier Monate erfasst? Trag den Stand unter
   *Einstellungen → Überstunden* ein (Minusstunden mit Minus davor, z. B. `-4`).
 
 Eingeben kannst du Stunden als `172,5` oder `172:30`. Ob die App sie als **12,5 Std.** oder **12:30 Std.** anzeigt,
 stellst du unter *Einstellungen → Überstunden* ein.
 
-Der Bildschirm zeigt den aktuellen Stand, je Jahr die Summen (gearbeitet, ausbezahlt, Überstunden, Stand am
-Jahresende), ein Diagramm und alle Monate mit laufendem Stand. **Fehlt ein Monat** (z. B. der Vormonat), erscheint
+Der Bildschirm zeigt den aktuellen Stand, je Jahr die Summen (gearbeitet, ausbezahlt, Überstunden, vom AZK
+ausbezahlt, Stand am Jahresende), ein Diagramm und alle Monate mit Überstunden, AZK-Auszahlung und laufendem Stand. **Fehlt ein Monat** (z. B. der Vormonat), erscheint
 ein Hinweis – auch auf der Übersicht; ein Tipp darauf öffnet genau diesen Monat. Einen Monat korrigierst oder löschst
 du, indem du ihn in der Liste antippst.
 
-**Export:** Alle Monate mit Stand als **PDF** (z. B. für ein Gespräch mit dem Arbeitgeber) oder **CSV**.
+**Export:** Alle Monate mit Überstunden, AZK-Auszahlung und Stand als **PDF** (z. B. für ein Gespräch mit dem
+Arbeitgeber) oder **CSV**.
 
 ## 4. Backup (bitte regelmäßig!)
 

@@ -223,7 +223,8 @@ export function cumulativeChart({ year, current, previous, lastMonth }) {
 
 /**
  * Säulen nach oben (Überstunden) oder unten (weniger gearbeitet als ausbezahlt).
- * rows: erfasste Monate des Jahres [{ month, diff, balance, rec }]; fmt: Minuten → Text
+ * rows: erfasste Monate des Jahres [{ month, diff, azk, balance, rec }]; fmt: Minuten → Text.
+ * Die Säule zeigt die Überstunden des Monats (gearbeitet − ausbezahlt); die AZK-Auszahlung steht im Detail.
  */
 export function hoursChart(rows, { year, fmt }) {
   const byMonth = new Map(rows.map((r) => [Number(r.month.slice(5)) - 1, r]));
@@ -277,6 +278,7 @@ export function hoursChart(rows, { year, fmt }) {
           { key: r.diff < 0 ? 'k-minus' : 'k-plus', value: fmt(r.diff, true), label: 'Überstunden' },
           { value: fmt(r.rec.workedMinutes), label: 'gearbeitet' },
           { value: fmt(r.rec.paidMinutes), label: 'ausbezahlt' },
+          ...(r.azk ? [{ value: fmt(-r.azk, true), label: 'vom AZK' }] : []),
           { value: fmt(r.balance, true), label: 'Stand' },
         ], `${MONTHS[i]} ${year}`);
       };

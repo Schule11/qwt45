@@ -138,12 +138,14 @@ function sanitize(data) {
   const minutesOk = (m) => Number.isSafeInteger(m) && m >= 0 && m <= MAX_MONTH_MINUTES;
   const hours = [];
   for (const x of arr(data.hours)) {
-    if (!x || !MONTH_RE.test(x.month) || !minutesOk(x.workedMinutes) || !minutesOk(x.paidMinutes)) { skipped++; continue; }
+    const azk = x?.azkMinutes ?? 0; // ältere Backups kennen noch keine AZK-Auszahlung
+    if (!x || !MONTH_RE.test(x.month) || !minutesOk(x.workedMinutes) || !minutesOk(x.paidMinutes) || !minutesOk(azk)) { skipped++; continue; }
     hours.push({
       id: `h-${x.month}`,
       month: x.month,
       workedMinutes: x.workedMinutes,
       paidMinutes: x.paidMinutes,
+      azkMinutes: azk,
       note: str(x.note),
       createdAt: str(x.createdAt) || nowISO(),
       updatedAt: str(x.updatedAt) || nowISO(),

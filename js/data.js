@@ -21,7 +21,8 @@ import { DEFAULT_SETTINGS, defaultCategoryRecords } from './defaults.js';
  *
  * Überstunden (ein Eintrag je Monat, feste ID "h-JJJJ-MM" – so entstehen beim
  * Zusammenführen zweier Geräte keine doppelten Monate):
- * { id, month: 'JJJJ-MM', workedMinutes, paidMinutes, note, createdAt, updatedAt }
+ * { id, month: 'JJJJ-MM', workedMinutes, paidMinutes, azkMinutes, note, createdAt, updatedAt }
+ * (azkMinutes = vom Arbeitszeitkonto ausbezahlt; fehlt bei älteren Einträgen und zählt dann als 0)
  */
 export const state = {
   bookings: [],
@@ -292,7 +293,7 @@ export async function deleteBooking(id) {
 // ---------- Überstunden ----------
 
 /** Monat speichern (neu oder geändert): ym = "JJJJ-MM" */
-export async function saveHours(ym, { workedMinutes, paidMinutes, note = '' }) {
+export async function saveHours(ym, { workedMinutes, paidMinutes, azkMinutes = 0, note = '' }) {
   const id = `h-${ym}`;
   const existing = state.hours.find((x) => x.id === id);
   const now = nowISO();
@@ -301,6 +302,7 @@ export async function saveHours(ym, { workedMinutes, paidMinutes, note = '' }) {
     month: ym,
     workedMinutes,
     paidMinutes,
+    azkMinutes,
     note: String(note || '').trim(),
     createdAt: existing?.createdAt || now,
     updatedAt: now,

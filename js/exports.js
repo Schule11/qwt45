@@ -216,13 +216,15 @@ export function footer(pdf, label, M, R) {
 
 /** Alle erfassten Monate mit Differenz und laufendem Stand */
 export function hoursCsv() {
-  const rows = [['Monat', 'Gearbeitet (Std.)', 'Ausbezahlt (Std.)', 'Überstunden (Std.)', 'Stand (Std.)', 'Notiz'].map(textCell)];
+  const rows = [['Monat', 'Gearbeitet (Std.)', 'Ausbezahlt (Std.)', 'Überstunden (Std.)', 'Vom AZK ausbezahlt (Std.)', 'Stand (Std.)', 'Notiz'].map(textCell)];
   // Zahlen immer als Dezimalzahl mit Komma – damit Excel/Numbers damit rechnen können
   const num = (m) => hoursToInput(m, 'decimal');
-  rows.push([textCell('Übertrag'), '', '', '', num(startBalance()), '']);
+  rows.push([textCell('Übertrag'), '', '', '', '', num(startBalance()), '']);
   for (const r of hoursRows()) {
-    rows.push([textCell(monthLabel(r.month)), num(r.rec.workedMinutes), num(r.rec.paidMinutes), num(r.diff), num(r.balance), textCell(r.rec.note)]);
+    rows.push([textCell(monthLabel(r.month)), num(r.rec.workedMinutes), num(r.rec.paidMinutes), num(r.diff), num(r.azk), num(r.balance), textCell(r.rec.note)]);
   }
+  rows.push([]);
+  rows.push([textCell('Überstunden = gearbeitet − ausbezahlt; Stand = Übertrag + Überstunden − vom AZK ausbezahlt')]);
   return csvFile(rows, `haushaltsbuch-ueberstunden-${todayISO()}.csv`);
 }
 
@@ -233,7 +235,7 @@ export function hoursPdf() {
   const M = 48;
   const R = pdf.W - M;
   const BOTTOM = pdf.H - 60;
-  const cols = [R - 300, R - 210, R - 110, R]; // rechte Kanten: gearbeitet, ausbezahlt, Überstunden, Stand
+  const cols = [R - 316, R - 238, R - 158, R - 80, R]; // rechte Kanten: gearbeitet, ausbezahlt, Überstunden, AZK, Stand
   const fmt = (m, signed = false) => formatHours(m, { signed, unit: false });
   let y = M + 14;
 
@@ -254,7 +256,7 @@ export function hoursPdf() {
   const tableHead = () => {
     y += 26;
     pdf.text('Monat', M, y, { size: 8.5, color: GREY });
-    ['Gearbeitet', 'Ausbezahlt', 'Überstunden', 'Stand'].forEach((t, i) => pdf.text(t, cols[i], y, { size: 8.5, color: GREY, align: 'right' }));
+    ['Gearbeitet', 'Ausbezahlt', 'Überstunden', 'Vom AZK', 'Stand'].forEach((t, i) => pdf.text(t, cols[i], y, { size: 8.5, color: GREY, align: 'right' }));
     y += 4;
     pdf.line(M, y, R, y, { color: LIGHT });
   };
@@ -263,7 +265,7 @@ export function hoursPdf() {
   if (startBalance()) {
     y += 15;
     pdf.text('Übertrag', M, y, { size: 10, color: GREY });
-    pdf.text(fmt(startBalance(), true), cols[3], y, { size: 10, align: 'right' });
+    pdf.text(fmt(startBalance(), true), cols[4], y, { size: 10, align: 'right' });
   }
   let year = null;
   for (const r of rows) {
@@ -279,7 +281,8 @@ export function hoursPdf() {
     pdf.text(fmt(r.rec.workedMinutes), cols[0], y, { size: 10, align: 'right' });
     pdf.text(fmt(r.rec.paidMinutes), cols[1], y, { size: 10, align: 'right' });
     pdf.text(fmt(r.diff, true), cols[2], y, { size: 10, align: 'right', color: r.diff < 0 ? RED : [0, 0, 0] });
-    pdf.text(fmt(r.balance, true), cols[3], y, { size: 10, bold: true, align: 'right', color: r.balance < 0 ? RED : [0, 0, 0] });
+    pdf.text(r.azk ? fmt(-r.azk, true) : '–', cols[3], y, { size: 10, align: 'right', color: r.azk ? RED : GREY });
+    pdf.text(fmt(r.balance, true), cols[4], y, { size: 10, bold: true, align: 'right', color: r.balance < 0 ? RED : [0, 0, 0] });
     if (note) {
       y += 11;
       pdf.text(note, M + 8, y, { size: 8, color: GREY, maxWidth: R - M - 8 });
@@ -292,7 +295,7 @@ export function hoursPdf() {
   }
   y += 26;
   if (y < BOTTOM) {
-    pdf.text('Alle Angaben in Stunden. Überstunden = gearbeitet − ausbezahlt; Stand = Übertrag + Summe der Monate.', M, y, { size: 8, color: GREY, maxWidth: R - M });
+    pdf.text('Alle Angaben in Stunden. Überstunden = gearbeitet − ausbezahlt; Stand = Übertrag + Überstunden − vom AZK ausbezahlt.', M, y, { size: 8, color: GREY, maxWidth: R - M });
   }
 
   footer(pdf, 'Haushaltsbuch · Überstunden', M, R);

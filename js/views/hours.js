@@ -78,6 +78,7 @@ export function render(root) {
     statRow('Gearbeitet', fmt(y.worked)),
     statRow('Ausbezahlt', fmt(y.paid)),
     statRow('Überstunden im Jahr', fmt(y.diff, true), y.diff < 0 ? 'neg' : ''),
+    y.azk ? statRow('Vom AZK ausbezahlt', fmt(-y.azk, true), 'neg') : null,
     h('div', { class: 'stat total' },
       h('span', { class: 'stat-label' }, selectedYear === new Date().getFullYear() ? 'Stand bisher' : `Stand Ende ${selectedYear}`),
       h('span', { class: `stat-value${y.endOfYear < 0 ? ' neg' : ''}` }, fmt(y.endOfYear, true))),
@@ -108,12 +109,13 @@ function statRow(label, value, cls = '') {
 
 function explainText() {
   return [
-    h('p', { style: 'margin-top: 0' }, 'Trag jeden Monat zwei Zahlen ein: die Stunden, die du tatsächlich gearbeitet hast, '
-      + 'und die Stunden, die dir ausbezahlt wurden (steht auf der Lohnabrechnung).'),
+    h('p', { style: 'margin-top: 0' }, 'Trag jeden Monat ein: die Stunden, die du tatsächlich gearbeitet hast, '
+      + 'die ausbezahlten Stunden und – falls es welche gab – die Stunden, die vom Arbeitszeitkonto (AZK) ausbezahlt wurden. '
+      + 'Beides steht auf der Lohnabrechnung.'),
     h('p', null, h('strong', null, 'Überstunden des Monats'), ' = gearbeitet − ausbezahlt. ',
-      h('strong', null, 'Stand'), ' = Übertrag + alle Monate zusammen.'),
+      h('strong', null, 'Stand'), ' = Übertrag + alle Überstunden − alle AZK-Auszahlungen.'),
     h('p', { class: 'hint' }, 'Überstunden abgebaut (Freizeitausgleich)? Dann hast du weniger gearbeitet als ausbezahlt – der Stand sinkt von selbst. '
-      + 'Überstunden ausbezahlt bekommen? Dann zählen sie bei „ausbezahlt“ mit.'),
+      + 'Überstunden vom AZK ausbezahlt bekommen? Dann trag sie im Feld „Vom AZK ausbezahlt“ ein – auch das senkt den Stand.'),
     h('p', { class: 'hint', style: 'margin-bottom: 0' }, 'Überstunden von vorher und die Anzeige (12,5 oder 12:30): Einstellungen → Überstunden.'),
   ];
 }
@@ -136,10 +138,11 @@ function monthList(y) {
     }
     const n = (m) => formatHours(m, { unit: false });
     const sub = `${n(row.rec.workedMinutes)} gearbeitet · ${n(row.rec.paidMinutes)} ausbezahlt`;
+    const azkText = row.azk ? `, vom AZK ausbezahlt ${formatHours(row.azk)}` : '';
     return h('button', {
       type: 'button',
       class: 'row hours-row',
-      'aria-label': `${monthLabel(month)}: ${signedHours(row.diff)}, Stand ${signedHours(row.balance)}. Bearbeiten`,
+      'aria-label': `${monthLabel(month)}: Überstunden ${signedHours(row.diff)}${azkText}, Stand ${signedHours(row.balance)}. Bearbeiten`,
       onclick: () => openHoursForm({ month }),
     },
     h('div', { class: 'row-main' },
@@ -148,6 +151,7 @@ function monthList(y) {
       row.rec.note ? h('div', { class: 'row-sub' }, row.rec.note) : null),
     h('div', { class: 'hours-amts' },
       h('span', { class: `amt ${row.diff < 0 ? 'expense' : row.diff > 0 ? 'income' : ''}` }, signedHours(row.diff)),
+      row.azk ? h('span', { class: 'hours-azk' }, `AZK ${signedHours(-row.azk)}`) : null,
       h('span', { class: 'hours-balance' }, `Stand ${signedHours(row.balance)}`)));
   }));
 }
@@ -208,9 +212,11 @@ export function openHoursForm({ month = null } = {}) {
   const workedInput = hoursInput('hours-worked', 'Tatsächlich gearbeitet in Stunden');
   const paidInput = hoursInput('hours-paid', 'Ausbezahlt in Stunden');
   const paidHint = h('p', { class: 'hint', hidden: true });
+  const azkInput = hoursInput('hours-azk', 'Vom Arbeitszeitkonto ausbezahlt in Stunden');
+  azkInput.placeholder = '0';
   const noteInput = h('input', {
     class: 'field', id: 'hours-note', type: 'text', maxlength: 200, autocomplete: 'off', autocapitalize: 'sentences',
-    enterkeyhint: 'done', placeholder: 'z. B. 3 Tage Urlaub, 5 Std. ausbezahlt',
+    enterkeyhint: 'done', placeholder: 'z. B. 3 Tage Urlaub',
     oninput: () => { st.dirty = true; },
   });
   const preview = h('div', { class: 'hours-preview', 'aria-live': 'polite' });
@@ -235,7 +241,12 @@ export function openHoursForm({ month = null } = {}) {
       h('label', { class: 'lbl', for: 'hours-paid' }, 'Ausbezahlt'),
       h('div', { class: 'unit-field' }, paidInput, h('span', { class: 'unit' }, 'Std.')),
       paidHint,
-      h('p', { class: 'hint' }, 'Laut Lohnabrechnung. Wurden Überstunden ausbezahlt, gehören sie hier mit dazu.'),
+      h('p', { class: 'hint' }, 'Laut Lohnabrechnung – ohne die Auszahlung vom Arbeitszeitkonto (die kommt ins Feld darunter).'),
+
+      h('label', { class: 'lbl', for: 'hours-azk' }, 'Vom AZK ausbezahlt (optional)'),
+      h('div', { class: 'unit-field' }, azkInput, h('span', { class: 'unit' }, 'Std.')),
+      h('p', { class: 'hint' }, 'Steht auf der Lohnabrechnung als eigener Posten „AZK“. Diese Stunden werden von deinen Überstunden abgezogen. '
+        + 'Leer lassen, wenn nichts ausbezahlt wurde.'),
 
       preview,
 
@@ -259,10 +270,11 @@ export function openHoursForm({ month = null } = {}) {
     if (rec) {
       workedInput.value = hoursToInput(rec.workedMinutes, format);
       paidInput.value = hoursToInput(rec.paidMinutes, format);
+      azkInput.value = rec.azkMinutes ? hoursToInput(rec.azkMinutes, format) : '';
       noteInput.value = rec.note || '';
       paidHint.hidden = true;
     } else {
-      if (hadExisting) { workedInput.value = ''; noteInput.value = ''; }
+      if (hadExisting) { workedInput.value = ''; azkInput.value = ''; noteInput.value = ''; }
       // Ausbezahlte Stunden sind meist jeden Monat gleich: vom letzten Monat übernehmen
       const prev = previousRecord(st.month);
       if (prev && (!paidInput.value || hadExisting)) {
@@ -285,21 +297,32 @@ export function openHoursForm({ month = null } = {}) {
     loadMonth();
   }
 
-  /** Vorschau: Überstunden dieses Monats und Stand danach */
+  /** AZK-Feld lesen: leer = 0, ungültig = null */
+  function azkValue() {
+    return azkInput.value.trim() ? parseHours(azkInput.value) : 0;
+  }
+
+  /** Vorschau: Überstunden dieses Monats, AZK-Auszahlung und Stand danach */
   function updatePreview() {
     const worked = parseHours(workedInput.value);
     const paid = parseHours(paidInput.value);
+    const azk = azkValue();
     if (worked == null || paid == null) {
-      preview.replaceChildren(h('span', { class: 'muted' }, 'Überstunden und Stand erscheinen hier, sobald beide Zahlen eingetragen sind.'));
+      preview.replaceChildren(h('span', { class: 'muted' }, 'Überstunden und Stand erscheinen hier, sobald gearbeitete und ausbezahlte Stunden eingetragen sind.'));
+      return;
+    }
+    if (azk == null) {
+      preview.replaceChildren(h('span', { class: 'muted' }, 'Bitte beim AZK eine Zahl eingeben (z. B. 10) oder das Feld leer lassen.'));
       return;
     }
     const diff = worked - paid;
-    const after = balanceWith(st.month, worked, paid);
+    const after = balanceWith(st.month, worked, paid, azk);
     const later = state.hours.some((x) => x.month > st.month);
     preview.replaceChildren();
     mount(preview,
       h('div', { class: 'kv' }, h('span', null, `Überstunden ${MONTHS[Number(st.month.slice(5)) - 1]}`),
         h('strong', { class: diff < 0 ? 'neg' : diff > 0 ? 'pos' : '' }, signedHours(diff))),
+      azk ? h('div', { class: 'kv' }, h('span', null, 'Vom AZK ausbezahlt'), h('strong', { class: 'neg' }, signedHours(-azk))) : null,
       h('div', { class: 'kv' }, h('span', null, `Stand Ende ${monthLabel(st.month)}`),
         h('strong', { class: after < 0 ? 'neg' : '' }, signedHours(after))),
       later ? h('p', { class: 'hint', style: 'margin: 4px 0 0' }, 'Spätere Monate verschieben sich entsprechend mit.') : null);
@@ -328,7 +351,12 @@ export function openHoursForm({ month = null } = {}) {
       showError(paidInput.value.trim() ? `Bitte die ausbezahlten Stunden als Zahl eingeben, z. B. ${example}.` : 'Bitte die ausbezahlten Stunden eingeben.');
       return;
     }
-    if (worked > MAX_MINUTES || paid > MAX_MINUTES) { showError('So viele Stunden hat ein Monat nicht. Bitte prüfen.'); return; }
+    const azk = azkValue();
+    if (azk == null) {
+      showError(`Bitte beim AZK die ausbezahlten Stunden als Zahl eingeben, z. B. ${format === 'hm' ? '10:00' : '10'} – oder das Feld leer lassen.`);
+      return;
+    }
+    if (worked > MAX_MINUTES || paid > MAX_MINUTES || azk > MAX_MINUTES) { showError('So viele Stunden hat ein Monat nicht. Bitte prüfen.'); return; }
     if (!st.existing && hoursFor(st.month)) { loadMonth(); return; } // inzwischen anderswo angelegt
 
     st.saving = true;
@@ -336,7 +364,7 @@ export function openHoursForm({ month = null } = {}) {
     saveBtnTop.disabled = true;
     try {
       const isNew = !st.existing;
-      await saveHours(st.month, { workedMinutes: worked, paidMinutes: paid, note: noteInput.value });
+      await saveHours(st.month, { workedMinutes: worked, paidMinutes: paid, azkMinutes: azk, note: noteInput.value });
       close();
       toast(`${monthLabel(st.month)} ${isNew ? 'erfasst' : 'gespeichert'} · Stand ${signedHours(hoursBalance().minutes)}`);
     } catch (err) {
@@ -393,6 +421,7 @@ export function openHoursForm({ month = null } = {}) {
 
   // Enter im Feld "gearbeitet" springt weiter zu "ausbezahlt"
   workedInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); paidInput.focus(); } });
+  paidInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); azkInput.focus(); } });
 
   // ---------- Start ----------
 
