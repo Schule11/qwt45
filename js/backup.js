@@ -7,7 +7,7 @@
 // - Ersetzen: Alle Daten auf diesem Gerät werden durch das Backup ersetzt.
 
 import * as db from './db.js';
-import { state, load, emitChange, nowISO, updateLocal } from './data.js';
+import { state, load, emitChange, nowISO, updateLocal, legacyHoursToSec, legacyMinutesToSec } from './data.js';
 import { DEFAULT_SETTINGS } from './defaults.js';
 import { APP_ID, APP_VERSION, BACKUP_FORMAT } from './config.js';
 import { todayISO } from './format.js';
@@ -77,7 +77,7 @@ export async function markBackupDone() {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
-const MAX_MONTH_MINUTES = 744 * 60; // 31 Tage × 24 Stunden
+const MAX_MONTH_SEC = 744 * 3600; // 31 Tage × 24 Stunden
 
 export async function readBackupFile(file) {
   let data;
@@ -134,18 +134,23 @@ function sanitize(data) {
       updatedAt: str(c.updatedAt) || nowISO(),
     }));
 
-  // Überstunden: ID folgt immer aus dem Monat ("h-JJJJ-MM")
-  const minutesOk = (m) => Number.isSafeInteger(m) && m >= 0 && m <= MAX_MONTH_MINUTES;
+  // Überstunden: ID folgt immer aus dem Monat ("h-JJJJ-MM"); Stunden in Sekunden.
+  // Backups bis Format 3 speichern Minuten – die werden hier umgerechnet.
+  const secOk = (x) => Number.isSafeInteger(x) && x >= 0 && x <= MAX_MONTH_SEC;
   const hours = [];
-  for (const x of arr(data.hours)) {
-    const azk = x?.azkMinutes ?? 0; // ältere Backups kennen noch keine AZK-Auszahlung
-    if (!x || !MONTH_RE.test(x.month) || !minutesOk(x.workedMinutes) || !minutesOk(x.paidMinutes) || !minutesOk(azk)) { skipped++; continue; }
+  for (const raw of arr(data.hours)) {
+    if (!raw || !MONTH_RE.test(raw.month)) { skipped++; continue; }
+    const legacy = !Number.isSafeInteger(raw.workedSec);
+    if (legacy && !(Number.isSafeInteger(raw.workedMinutes) && Number.isSafeInteger(raw.paidMinutes))) { skipped++; continue; }
+    const x = legacy ? legacyHoursToSec(raw) : raw;
+    const azk = x.azkSec ?? 0;
+    if (!secOk(x.workedSec) || !secOk(x.paidSec) || !secOk(azk)) { skipped++; continue; }
     hours.push({
       id: `h-${x.month}`,
       month: x.month,
-      workedMinutes: x.workedMinutes,
-      paidMinutes: x.paidMinutes,
-      azkMinutes: azk,
+      workedSec: x.workedSec,
+      paidSec: x.paidSec,
+      azkSec: azk,
       note: str(x.note),
       createdAt: str(x.createdAt) || nowISO(),
       updatedAt: str(x.updatedAt) || nowISO(),
@@ -188,8 +193,11 @@ function sanitize(data) {
       const v = data.settings[key];
       if (v !== undefined && typeof v === typeof DEFAULT_SETTINGS[key]) settings[key] = v;
     }
-    if (!Number.isSafeInteger(settings.hoursStartMinutes)) settings.hoursStartMinutes = 0;
-    if (!['decimal', 'hm'].includes(settings.hoursFormat)) settings.hoursFormat = 'decimal';
+    // Übertrag: in älteren Backups noch in Minuten
+    if (data.settings.hoursStartSec === undefined && Number.isSafeInteger(data.settings.hoursStartMinutes)) {
+      settings.hoursStartSec = legacyMinutesToSec(data.settings.hoursStartMinutes);
+    }
+    if (!Number.isSafeInteger(settings.hoursStartSec)) settings.hoursStartSec = 0;
   }
 
   return {

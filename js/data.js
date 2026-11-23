@@ -21,8 +21,10 @@ import { DEFAULT_SETTINGS, defaultCategoryRecords } from './defaults.js';
  *
  * Überstunden (ein Eintrag je Monat, feste ID "h-JJJJ-MM" – so entstehen beim
  * Zusammenführen zweier Geräte keine doppelten Monate):
- * { id, month: 'JJJJ-MM', workedMinutes, paidMinutes, azkMinutes, note, createdAt, updatedAt }
- * (azkMinutes = vom Arbeitszeitkonto ausbezahlt; fehlt bei älteren Einträgen und zählt dann als 0)
+ * { id, month: 'JJJJ-MM', workedSec, paidSec, azkSec, note, createdAt, updatedAt }
+ * Alle Stunden in Sekunden (ganze Zahlen): gearbeitet wird als Std:Min erfasst (1 Min = 60 s),
+ * ausbezahlt und AZK als Kommazahl wie auf der Lohnabrechnung (0,01 Std = 36 s) – beides exakt.
+ * azkSec = vom Arbeitszeitkonto ausbezahlt (fehlt die Angabe, zählt sie als 0).
  */
 export const state = {
   bookings: [],
@@ -70,7 +72,29 @@ export function replaceInState(list, item) {
 
 // ---------- Laden ----------
 
-const DATA_VERSION = 1;
+const DATA_VERSION = 2;
+
+// ---------- Umrechnung älterer Überstunden-Daten (bis Version 1.2: ganze Minuten) ----------
+
+/**
+ * Bis Version 1.2 wurde in ganzen Minuten gespeichert. Die Umrechnung ist 1:1
+ * (Minuten × 60), damit sich der bisherige Stand um keine Sekunde ändert.
+ * (Die damals eingetippte Kommazahl lässt sich nicht immer zurückgewinnen:
+ * 0,13 und 0,14 Stunden wurden z. B. beide als 8 Minuten gespeichert.)
+ */
+export const legacyMinutesToSec = (minutes) => minutes * 60;
+
+/** Überstunden-Eintrag im alten Format (…Minutes) in das neue (…Sec) umrechnen */
+export function legacyHoursToSec(rec) {
+  if (Number.isSafeInteger(rec.workedSec)) return rec;
+  const { workedMinutes, paidMinutes, azkMinutes, ...rest } = rec;
+  return {
+    ...rest,
+    workedSec: legacyMinutesToSec(workedMinutes),
+    paidSec: legacyMinutesToSec(paidMinutes),
+    azkSec: legacyMinutesToSec(Number.isSafeInteger(azkMinutes) ? azkMinutes : 0),
+  };
+}
 
 export async function load() {
   let [bookings, categories, hours, recurring, meta] = await Promise.all([
@@ -100,7 +124,27 @@ export async function load() {
 /** Datenanpassungen für neue App-Versionen laufen hier genau einmal. */
 async function migrate(from) {
   if (from >= DATA_VERSION) return;
-  // Für spätere Versionen: if (from < 2) { ... }
+  // Version 2: Überstunden in Sekunden statt Minuten (exakt für Std:Min und Kommazahlen)
+  if (from < 2) {
+    const converted = state.hours.filter((x) => !Number.isSafeInteger(x.workedSec)).map(legacyHoursToSec);
+    const settings = { ...state.settings };
+    let settingsChanged = false;
+    if (Number.isSafeInteger(settings.hoursStartMinutes)) {
+      settings.hoursStartSec = legacyMinutesToSec(settings.hoursStartMinutes);
+      settingsChanged = true;
+    }
+    if ('hoursStartMinutes' in settings || 'hoursFormat' in settings) {
+      delete settings.hoursStartMinutes;
+      delete settings.hoursFormat;
+      settingsChanged = true;
+    }
+    await db.write(['hours', 'meta'], (s) => {
+      for (const x of converted) s.hours.put(x);
+      if (settingsChanged) s.meta.put({ key: 'settings', value: settings });
+    });
+    for (const x of converted) replaceInState(state.hours, x);
+    state.settings = settings;
+  }
   await db.write(['meta'], (s) => s.meta.put({ key: 'dataVersion', value: DATA_VERSION }));
 }
 
@@ -293,16 +337,16 @@ export async function deleteBooking(id) {
 // ---------- Überstunden ----------
 
 /** Monat speichern (neu oder geändert): ym = "JJJJ-MM" */
-export async function saveHours(ym, { workedMinutes, paidMinutes, azkMinutes = 0, note = '' }) {
+export async function saveHours(ym, { workedSec, paidSec, azkSec = 0, note = '' }) {
   const id = `h-${ym}`;
   const existing = state.hours.find((x) => x.id === id);
   const now = nowISO();
   const rec = {
     id,
     month: ym,
-    workedMinutes,
-    paidMinutes,
-    azkMinutes,
+    workedSec,
+    paidSec,
+    azkSec,
     note: String(note || '').trim(),
     createdAt: existing?.createdAt || now,
     updatedAt: now,

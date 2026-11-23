@@ -81,10 +81,12 @@ Unten in der Menüleiste auf **Stunden** tippen. Auf diesem Bildschirm erfasst d
 (statt einer Buchung).
 
 1. **Monat erfassen:** Monat wählen und laut Lohnabrechnung eintragen:
-   - die **tatsächlich gearbeiteten** Stunden,
-   - die **ausbezahlten** Stunden (ohne die Auszahlung vom Arbeitszeitkonto),
-   - die Stunden, die **vom Arbeitszeitkonto (AZK) ausbezahlt** wurden – steht auf der Lohnabrechnung als eigener
-     Posten „AZK“; leer lassen, wenn nichts ausbezahlt wurde,
+   - die **tatsächlich gearbeiteten** Stunden als **Stunden und Minuten** in zwei Feldern (z. B. 172 Std. 47 Min.);
+     darunter zeigt die App gleich die Kommazahl dazu (= 172,78 Std.),
+   - die **ausbezahlten** Stunden als **Kommazahl** wie auf der Abrechnung (z. B. 172,78; ohne die Auszahlung vom
+     Arbeitszeitkonto),
+   - die Stunden, die **vom Arbeitszeitkonto (AZK) ausbezahlt** wurden, ebenfalls als Kommazahl – steht auf der
+     Lohnabrechnung als eigener Posten „AZK“; leer lassen, wenn nichts ausbezahlt wurde,
    - optional eine Notiz (z. B. „3 Tage Urlaub“).
    Die App schlägt den richtigen Monat vor (meist den Vormonat) und übernimmt die ausbezahlten Stunden vom
    letzten erfassten Monat – bitte mit der Lohnabrechnung vergleichen.
@@ -99,10 +101,13 @@ So rechnet die App:
 - **Überstunden vom AZK ausbezahlt:** Im Feld „Vom AZK ausbezahlt“ eintragen – der Stand sinkt um diese Stunden.
   Monate, die vor diesem Feld erfasst wurden, zählen mit 0 AZK und bleiben unverändert.
 - **Übertrag:** Hattest du schon Überstunden, bevor du hier Monate erfasst? Trag den Stand unter
-  *Einstellungen → Überstunden* ein (Minusstunden mit Minus davor, z. B. `-4`).
+  *Einstellungen → Überstunden* als Kommazahl ein (Minusstunden mit Minus davor, z. B. `-4,25`).
 
-Eingeben kannst du Stunden als `172,5` oder `172:30`. Ob die App sie als **12,5 Std.** oder **12:30 Std.** anzeigt,
-stellst du unter *Einstellungen → Überstunden* ein.
+**Angezeigt** wird alles als Kommazahl (wie auf der Abrechnung), gerundet auf zwei Nachkommastellen: 8:56 erscheint
+als 8,93 Std., 5:25 als 5,42 Std. **Gerechnet** wird intern exakt in Sekunden (1 Minute = 60 s, 0,01 Std. = 36 s) –
+so passen Stunden:Minuten und Kommazahlen genau zusammen, und gerundet wird erst bei der Anzeige.
+Beispiel: 8:56 gearbeitet und 8,93 ausbezahlt ergeben 12 Sekunden Unterschied (angezeigt 0 Std.); über 20 solche
+Tage summieren sich diese korrekt auf 4 Minuten (+0,07 Std.).
 
 Der Bildschirm zeigt den aktuellen Stand, je Jahr die Summen (gearbeitet, ausbezahlt, Überstunden, vom AZK
 ausbezahlt, Stand am Jahresende), ein Diagramm und alle Monate mit Überstunden, AZK-Auszahlung und laufendem Stand. **Fehlt ein Monat** (z. B. der Vormonat), erscheint
@@ -157,10 +162,10 @@ Reines HTML, CSS und JavaScript, ohne Build-Werkzeuge und ohne fremde Bibliothek
 | `js/app.js` | Start, Navigation, +-Knopf, Updates |
 | `js/config.js` | App-Kennung (`APP_ID`), Version, Backup-Format |
 | `js/db.js` | Datenbank im Browser (IndexedDB), Versionen und Umbauten |
-| `js/data.js` | Buchungen, Kategorien, Überstunden, Einstellungen; Beträge immer in **Cent**, Stunden in **Minuten** (ganze Zahlen) |
+| `js/data.js` | Buchungen, Kategorien, Überstunden, Einstellungen; Beträge immer in **Cent**, Stunden in **Sekunden** (ganze Zahlen) |
 | `js/defaults.js` | Vorbelegte Kategorien und Einstellungen |
 | `js/recurring.js` | Daueraufträge: Zeitplan (Tag im Monat, Monatsende, Rhythmus, Anzahl), fällige Zahlungen buchen, ändern, beenden |
-| `js/hours.js` | Überstunden: Rechnen (Stand, Jahre, fehlende Monate), Eingabe lesen (`172,5`/`172:30`), Anzeige |
+| `js/hours.js` | Überstunden: Rechnen in Sekunden (Stand, Jahre, fehlende Monate), Eingabe lesen (Std.:Min. bzw. Kommazahl `172,78`), Anzeige als Kommazahl |
 | `js/yearReport.js`, `js/exports.js`, `js/pdf.js` | Auswertung je Monat/Jahr, CSV, PDF (auch für Überstunden) |
 | `js/backup.js` | Backup erstellen, prüfen, zusammenführen |
 | `js/notices.js` | Backup-Erinnerung |

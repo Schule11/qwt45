@@ -48,7 +48,6 @@ export function defaultCategoryRecords() {
 // Alle Geldbeträge in Cent (ganze Zahlen).
 export const DEFAULT_SETTINGS = {
   backupReminderDays: 30, // 0 = keine Erinnerung
-  hoursStartMinutes: 0,   // Überstunden-Übertrag vor dem ersten erfassten Monat (Minuten, auch negativ)
-  hoursFormat: 'decimal', // Anzeige der Stunden: 'decimal' (12,5 Std.) oder 'hm' (12:30 Std.)
+  hoursStartSec: 0,       // Überstunden-Übertrag vor dem ersten erfassten Monat (Sekunden, auch negativ)
   updatedAt: EPOCH,
 };

@@ -218,10 +218,10 @@ export function footer(pdf, label, M, R) {
 export function hoursCsv() {
   const rows = [['Monat', 'Gearbeitet (Std.)', 'Ausbezahlt (Std.)', 'Überstunden (Std.)', 'Vom AZK ausbezahlt (Std.)', 'Stand (Std.)', 'Notiz'].map(textCell)];
   // Zahlen immer als Dezimalzahl mit Komma – damit Excel/Numbers damit rechnen können
-  const num = (m) => hoursToInput(m, 'decimal');
+  const num = (sec) => hoursToInput(sec); // Kommazahl, zwei Nachkommastellen
   rows.push([textCell('Übertrag'), '', '', '', '', num(startBalance()), '']);
   for (const r of hoursRows()) {
-    rows.push([textCell(monthLabel(r.month)), num(r.rec.workedMinutes), num(r.rec.paidMinutes), num(r.diff), num(r.azk), num(r.balance), textCell(r.rec.note)]);
+    rows.push([textCell(monthLabel(r.month)), num(r.rec.workedSec), num(r.rec.paidSec), num(r.diff), num(r.azk), num(r.balance), textCell(r.rec.note)]);
   }
   rows.push([]);
   rows.push([textCell('Überstunden = gearbeitet − ausbezahlt; Stand = Übertrag + Überstunden − vom AZK ausbezahlt')]);
@@ -278,8 +278,8 @@ export function hoursPdf() {
     }
     y += 15;
     pdf.text(MONTHS[Number(r.month.slice(5)) - 1], M, y, { size: 10 });
-    pdf.text(fmt(r.rec.workedMinutes), cols[0], y, { size: 10, align: 'right' });
-    pdf.text(fmt(r.rec.paidMinutes), cols[1], y, { size: 10, align: 'right' });
+    pdf.text(fmt(r.rec.workedSec), cols[0], y, { size: 10, align: 'right' });
+    pdf.text(fmt(r.rec.paidSec), cols[1], y, { size: 10, align: 'right' });
     pdf.text(fmt(r.diff, true), cols[2], y, { size: 10, align: 'right', color: r.diff < 0 ? RED : [0, 0, 0] });
     pdf.text(r.azk ? fmt(-r.azk, true) : '–', cols[3], y, { size: 10, align: 'right', color: r.azk ? RED : GREY });
     pdf.text(fmt(r.balance, true), cols[4], y, { size: 10, bold: true, align: 'right', color: r.balance < 0 ? RED : [0, 0, 0] });

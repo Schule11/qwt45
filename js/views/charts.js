@@ -222,7 +222,7 @@ export function cumulativeChart({ year, current, previous, lastMonth }) {
 // ---------- Überstunden pro Monat ----------
 
 /**
- * Säulen nach oben (Überstunden) oder unten (weniger gearbeitet als ausbezahlt).
+ * Säulen nach oben (Überstunden) oder unten (weniger gearbeitet als ausbezahlt). Werte in Sekunden.
  * rows: erfasste Monate des Jahres [{ month, diff, azk, balance, rec }]; fmt: Minuten → Text.
  * Die Säule zeigt die Überstunden des Monats (gearbeitet − ausbezahlt); die AZK-Auszahlung steht im Detail.
  */
@@ -233,7 +233,7 @@ export function hoursChart(rows, { year, fmt }) {
     const pad = { l: 40, r: 6, t: 10, b: 24 };
     const iw = W - pad.l - pad.r;
     const ih = H - pad.t - pad.b;
-    const vals = rows.map((r) => r.diff / 60);
+    const vals = rows.map((r) => r.diff / 3600); // Sekunden → Stunden
     let lo = Math.min(0, ...vals);
     let hi = Math.max(0, ...vals);
     if (hi === lo) hi = lo + 10;
@@ -258,7 +258,7 @@ export function hoursChart(rows, { year, fmt }) {
       const cx = gx + gw / 2;
       const r = byMonth.get(i);
       if (r && r.diff) {
-        const v = r.diff / 60;
+        const v = r.diff / 3600;
         const top = y(Math.max(0, v));
         const hgt = Math.abs(y(v) - y(0));
         const d = v > 0 ? barPath(cx - bw / 2, top, bw, hgt) : `M${cx - bw / 2},${y(0)} H${cx + bw / 2} V${y(0) + hgt} H${cx - bw / 2} Z`;
@@ -276,8 +276,8 @@ export function hoursChart(rows, { year, fmt }) {
         if (!r) { showTip(tip, [{ value: 'nicht erfasst', label: '' }], `${MONTHS[i]} ${year}`); return; }
         showTip(tip, [
           { key: r.diff < 0 ? 'k-minus' : 'k-plus', value: fmt(r.diff, true), label: 'Überstunden' },
-          { value: fmt(r.rec.workedMinutes), label: 'gearbeitet' },
-          { value: fmt(r.rec.paidMinutes), label: 'ausbezahlt' },
+          { value: fmt(r.rec.workedSec), label: 'gearbeitet' },
+          { value: fmt(r.rec.paidSec), label: 'ausbezahlt' },
           ...(r.azk ? [{ value: fmt(-r.azk, true), label: 'vom AZK' }] : []),
           { value: fmt(r.balance, true), label: 'Stand' },
         ], `${MONTHS[i]} ${year}`);

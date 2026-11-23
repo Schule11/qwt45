@@ -9,47 +9,32 @@ import { formatDateTime, formatSize } from '../format.js';
 import { APP_VERSION, APP_STAGE } from '../config.js';
 import { createBackupFile, markBackupDone, readBackupFile, applyBackup } from '../backup.js';
 import { saveFile, prefersShare } from '../files.js';
-import { formatHours, hoursToInput, parseHours, hoursFormat } from '../hours.js';
+import { formatHours, hoursToInput, parseHours } from '../hours.js';
 import { openCategoryList } from './categories.js';
 import { pageHeader, settingField, invalid, navRow } from './components.js';
 
 // ---------- Unterseite Überstunden ----------
 
-/** Übertrag und Anzeigeart der Überstunden */
+/** Übertrag der Überstunden (Stand vor dem ersten erfassten Monat) */
 export function openHoursSettings(onClose) {
   const { body } = openSheet({ title: 'Überstunden', onClose });
-  const formatButtons = [['decimal', '12,5 Std.'], ['hm', '12:30 Std.']].map(([v, l]) => h('button', {
-    type: 'button',
-    'aria-pressed': String(hoursFormat() === v),
-    onclick: async (e) => {
-      const btn = e.currentTarget; // nach dem await ist currentTarget nicht mehr gesetzt
-      await updateSettings({ hoursFormat: v }, { silent: true });
-      for (const b of btn.parentElement.children) b.setAttribute('aria-pressed', String(b === btn));
-      startInput.value = hoursToInput(state.settings.hoursStartMinutes || 0);
-      toast('Gespeichert');
-    },
-  }, l));
-  const fields = settingField({
+  mount(body, h('section', { class: 'card' }, settingField({
     id: 'set-hours-start',
     label: 'Übertrag (Stand vor dem ersten erfassten Monat)',
     unit: 'Std.',
-    inputmode: 'text',
-    value: hoursToInput(state.settings.hoursStartMinutes || 0),
-    hint: 'Hattest du schon Überstunden, bevor du hier Monate erfasst? Dann trag den Stand hier ein, z. B. 12,5 oder 12:30. '
-      + 'Minusstunden mit Minus davor, z. B. -4.',
+    inputmode: 'text', // mit Minuszeichen für Minusstunden
+    value: hoursToInput(state.settings.hoursStartSec || 0),
+    hint: 'Hattest du schon Überstunden, bevor du hier Monate erfasst? Dann trag den Stand als Kommazahl ein, z. B. 12,5. '
+      + 'Minusstunden mit Minus davor, z. B. -4,25.',
     onSave: async (v) => {
-      const minutes = v ? parseHours(v, { allowSign: true }) : 0;
-      if (minutes == null || Math.abs(minutes) > 10000 * 60) return invalid('Bitte eine Stundenzahl eingeben, z. B. 12,5, 12:30 oder -4.');
-      await updateSettings({ hoursStartMinutes: minutes }, { silent: true });
-      return hoursToInput(minutes);
+      const seconds = v ? parseHours(v, { allowSign: true }) : 0;
+      if (seconds == null || Math.abs(seconds) > 10000 * 3600) {
+        return invalid('Bitte eine Stundenzahl mit höchstens zwei Nachkommastellen eingeben, z. B. 12,5 oder -4,25.');
+      }
+      await updateSettings({ hoursStartSec: seconds }, { silent: true });
+      return hoursToInput(seconds);
     },
-  });
-  const startInput = fields[1].querySelector('input');
-  mount(body,
-    h('section', { class: 'card' }, fields),
-    h('h2', { class: 'section-title' }, 'Stunden anzeigen als'),
-    h('div', { class: 'segmented', role: 'group', 'aria-label': 'Stunden anzeigen als' }, formatButtons),
-    h('p', { class: 'hint' }, 'Eingeben kannst du immer beides: 172,5 oder 172:30.'));
+  })));
 }
 
 // ---------- Hauptseite ----------
@@ -109,7 +94,7 @@ export function render(root) {
 
     h('h2', { class: 'section-title' }, 'Überstunden'),
     h('div', { class: 'rows group' },
-      navRow('Übertrag & Anzeige', `Übertrag ${formatHours(s.hoursStartMinutes || 0, { signed: true })}`, () => openHoursSettings(refresh), { id: 'nav-hours' })),
+      navRow('Übertrag', formatHours(s.hoursStartSec || 0, { signed: true }), () => openHoursSettings(refresh), { id: 'nav-hours' })),
 
     h('h2', { class: 'section-title' }, 'Datensicherung'),
     h('section', { class: 'card' },

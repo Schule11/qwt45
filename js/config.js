@@ -10,8 +10,8 @@ export const storageKey = (name) => `${APP_ID}.${name}`;
 
 // Versionsnummer der App. Bei jeder Änderung auch in sw.js (VERSION) erhöhen,
 // damit Handys die neue Version laden.
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.3.0';
 export const APP_STAGE = '';
 
 // Format der Backup-Datei. Wird erhöht, wenn sich der Aufbau ändert.
-export const BACKUP_FORMAT = 3; // 2: mit Daueraufträgen, 3: Überstunden mit AZK-Auszahlung
+export const BACKUP_FORMAT = 4; // 2: Daueraufträge, 3: AZK-Auszahlung, 4: Überstunden in Sekunden
