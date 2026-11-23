@@ -2,7 +2,7 @@
 
 import { h, mount, toast, openSheet, choiceDialog, confirmDialog, alertDialog } from '../ui.js';
 import {
-  onChange, categoriesFor, bookingCount, saveCategory, moveCategory, deleteCategory,
+  onChange, categoriesFor, bookingCount, recurringCount, saveCategory, moveCategory, deleteCategory,
 } from '../data.js';
 
 const TYPE_LABEL = { income: 'Einnahmen', expense: 'Ausgaben' };
@@ -81,8 +81,9 @@ export function openCategoryEditor({ type, category = null }) {
       return;
     }
     const count = bookingCount(category.id);
+    const recCount = recurringCount(category.id);
     let moveTo = null;
-    if (count) {
+    if (count || recCount) {
       const target = h('select', { class: 'field', 'aria-label': 'Buchungen verschieben nach' },
         others.map((c) => h('option', { value: c.id }, c.name)));
       const sonstiges = others.find((c) => /^sonstig/i.test(c.name));
@@ -90,7 +91,10 @@ export function openCategoryEditor({ type, category = null }) {
       const choice = await choiceDialog({
         title: `„${category.name}“ löschen?`,
         text: h('div', null,
-          h('p', null, `${count} ${count === 1 ? 'Buchung gehört' : 'Buchungen gehören'} zu dieser Kategorie. Wohin sollen sie verschoben werden?`),
+          h('p', null, `${[
+            count ? `${count} ${count === 1 ? 'Buchung' : 'Buchungen'}` : null,
+            recCount ? `${recCount} ${recCount === 1 ? 'Dauerauftrag' : 'Daueraufträge'}` : null,
+          ].filter(Boolean).join(' und ')} ${count + recCount === 1 ? 'gehört' : 'gehören'} zu dieser Kategorie. Wohin sollen sie verschoben werden?`),
           target),
         buttons: [
           { label: 'Löschen und verschieben', value: 'delete', kind: 'danger' },

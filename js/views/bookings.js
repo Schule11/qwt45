@@ -1,9 +1,10 @@
 // Buchungsliste (Teil von "Finanzen"): nach Monaten, mit Suche und Filtern.
 
-import { h, mount } from '../ui.js';
+import { h, mount, icon } from '../ui.js';
 import { state, categoriesFor, categoryName, sortBookings, sumBookings, bookingYears } from '../data.js';
 import { formatSigned, formatBalance, formatDate, centsToInput, monthLabel, normalizeText } from '../format.js';
 import { bookingRow, yearSelect } from './components.js';
+import { openRecurringList, recurringSummary } from './recurringList.js';
 
 // Filter bleiben erhalten, solange die App offen ist
 const filters = {
@@ -175,7 +176,15 @@ export function renderList(root) {
 
   fillCategories();
   renderMonthPill();
+  // Daueraufträge verwalten
+  const recRow = h('button', { type: 'button', class: 'hint-row rec-entry', id: 'rec-open', onclick: () => openRecurringList() },
+    icon('repeat', 20),
+    h('span', null, 'Daueraufträge'),
+    h('span', { class: 'rec-entry-value' }, recurringSummary()),
+    h('span', { class: 'chevron', 'aria-hidden': 'true' }, '›'));
+
   mount(root,
+    recRow,
     h('div', { class: 'filters' },
       search,
       typeFilter,

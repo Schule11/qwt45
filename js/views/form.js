@@ -1,8 +1,10 @@
 // Formular "Neue Buchung" / "Buchung bearbeiten" – öffnet sich im Vollbild.
+// Mit dem Schalter "Wiederholen" wird daraus ein Dauerauftrag; dasselbe Formular
+// bearbeitet auch bestehende Daueraufträge (Option `recurring`).
 
-import { h, icon, toast, confirmDialog, openImageViewer, isTouchDevice } from '../ui.js';
+import { h, icon, toast, confirmDialog, choiceDialog, openImageViewer, isTouchDevice } from '../ui.js';
 import {
-  categoriesFor, categoryById, saveBooking, deleteBooking, getReceipt, receiptToBlob, recentCategoryIds,
+  state, categoriesFor, categoryById, saveBooking, deleteBooking, getReceipt, receiptToBlob, recentCategoryIds,
 } from '../data.js';
 import { disclosurePicker, pickerOption, pickerGroup } from './picker.js';
 import { parseAmount, centsToInput, todayISO, formatMoney, formatDate } from '../format.js';
@@ -10,6 +12,10 @@ import { prepareReceipt } from '../image.js';
 import { openFile } from '../files.js';
 import { storageKey } from '../config.js';
 import { registerForm } from './formState.js';
+import {
+  INTERVALS, dueDate, dueCount, nextDate, remaining, describeRhythm, saveRecurring, endRecurring, deleteRecurring,
+  recurringById, shiftDay,
+} from '../recurring.js';
 
 function getLastType() {
   // Standard: Ausgabe (das Häufigste im Alltag)
@@ -22,15 +28,24 @@ function setLastType(type) {
 /**
  * Öffnet das Formular. WICHTIG: Muss direkt im Klick-Handler aufgerufen
  * werden (ohne await davor), sonst öffnet das iPhone die Tastatur nicht.
+ * existing: Buchung zum Bearbeiten · recurring: Dauerauftrag zum Bearbeiten ·
+ * repeat: neue Buchung gleich mit eingeschaltetem "Wiederholen" öffnen
  */
-export function openBookingForm(existing = null) {
+export function openBookingForm(existing = null, { recurring = null, repeat = false } = {}) {
   const done = registerForm();
   if (!done) return;
 
-  const isEdit = !!existing;
+  const isEdit = !!existing;     // eine Buchung bearbeiten
+  const recEdit = !!recurring;   // einen Dauerauftrag bearbeiten
+  const src = recurring || existing;
+  const fromRec = isEdit ? recurringById(existing.recurringId) : null; // Buchung aus einem Dauerauftrag
+  const recLeft = recEdit ? remaining(recurring) : null;
   const st = {
-    type: existing?.type || getLastType(),
-    categoryId: existing?.categoryId || null,
+    type: src?.type || getLastType(),
+    categoryId: src?.categoryId || null,
+    repeat: recEdit || repeat,   // Dauerauftrag?
+    interval: recurring?.interval || 1,
+    endMode: recEdit && recurring.limit != null ? 'count' : 'never',
     receiptId: existing?.receiptId || null, // gespeichertes Foto
     newReceipt: null,                        // neu gewähltes Foto
     removeReceipt: false,
@@ -57,7 +72,7 @@ export function openBookingForm(existing = null) {
     autocomplete: 'off',
     placeholder: '0,00',
     'aria-label': 'Betrag in Euro',
-    value: existing ? centsToInput(existing.amountCents) : '',
+    value: src ? centsToInput(src.amountCents) : '',
     oninput: () => { st.dirty = true; clearError(); },
   });
 
@@ -75,7 +90,7 @@ export function openBookingForm(existing = null) {
     autocomplete: 'off',
     autocapitalize: 'sentences',
     enterkeyhint: 'done',
-    value: existing?.description || '',
+    value: src?.description || '',
     oninput: () => { st.dirty = true; },
     onkeydown: (e) => {
       // Auf dem Handy schließt "Fertig" nur die Tastatur, statt zu speichern
@@ -88,12 +103,66 @@ export function openBookingForm(existing = null) {
     id: 'date',
     type: 'date',
     required: true,
-    value: existing?.date || todayISO(),
-    onchange: () => { st.dirty = true; clearError(); },
+    value: recEdit ? (nextDate(recurring) || todayISO()) : (existing?.date || todayISO()),
+    onchange: () => { st.dirty = true; clearError(); updateRepeat(); },
   });
+  const dateLabel = h('label', { class: 'lbl', for: 'date' }, 'Datum');
+  const dateHint = h('p', { class: 'hint', hidden: true });
+
+  // ---------- Wiederholen (Dauerauftrag) ----------
+
+  const repeatBox = h('input', {
+    type: 'checkbox', id: 'repeat', checked: st.repeat,
+    onchange: () => { st.repeat = repeatBox.checked; st.dirty = true; clearError(); updateRepeat(); },
+  });
+  const repeatRow = (isEdit || recEdit) ? null : h('label', { class: 'switch-row', for: 'repeat' },
+    h('span', null,
+      h('strong', null, 'Wiederholen (Dauerauftrag)'),
+      h('span', { class: 'hint', style: 'display:block; margin: 2px 0 0' }, 'Für gleichbleibende Zahlungen wie Miete, Versicherung oder Abos.')),
+    repeatBox);
+  const intervalChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Rhythmus' },
+    INTERVALS.map(([value, label]) => h('button', {
+      type: 'button', class: 'chip', 'data-value': value,
+      onclick: () => { st.interval = value; st.dirty = true; updateRepeat(); },
+    }, label)));
+  const countInput = h('input', {
+    class: 'field', id: 'repeat-count', type: 'text', inputmode: 'numeric', autocomplete: 'off',
+    value: recEdit ? (recLeft ? String(recLeft) : '') : '12', 'aria-label': 'Anzahl Zahlungen',
+    oninput: () => { st.dirty = true; clearError(); updateRepeat(); },
+  });
+  const countWrap = h('div', { class: 'unit-field', style: 'margin-top: 10px' }, countInput, h('span', { class: 'unit' }, 'Zahlungen'));
+  const endChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Endet' },
+    [['never', 'Unbegrenzt'], ['count', 'Nach Anzahl Zahlungen']].map(([value, label]) => h('button', {
+      type: 'button', class: 'chip', 'data-value': value,
+      onclick: () => {
+        st.endMode = value;
+        st.dirty = true;
+        updateRepeat();
+        if (value === 'count') countInput.focus();
+      },
+    }, label)));
+  const repeatSummary = h('p', { class: 'hint repeat-summary' });
+  const repeatWrap = h('div', { class: 'repeat-wrap' },
+    h('div', { class: 'lbl' }, 'Rhythmus'),
+    intervalChips,
+    h('div', { class: 'lbl' }, recEdit ? 'Läuft noch' : 'Endet'),
+    endChips,
+    countWrap,
+    repeatSummary);
+
+  // Buchung aus einem Dauerauftrag: Hinweis mit Weg zum Dauerauftrag
+  const fromRecInfo = fromRec ? h('div', null,
+    h('div', { class: 'lbl' }, 'Dauerauftrag'),
+    h('button', { type: 'button', class: 'row nav-row rec-link', onclick: openRecurringFromBooking },
+      icon('repeat', 20),
+      h('span', { class: 'nav-label' }, fromRec.description || categoryById(fromRec.categoryId)?.name || 'Dauerauftrag'),
+      h('span', { class: 'nav-value' }, 'bearbeiten'),
+      h('span', { class: 'chevron', 'aria-hidden': 'true' }, '›')),
+    h('p', { class: 'hint' }, 'Änderungen hier gelten nur für diese eine Buchung.')) : null;
 
   const fileInput = h('input', { type: 'file', accept: 'image/*,application/pdf,.pdf', hidden: true, onchange: onFileChosen });
   const receiptRow = h('div', { class: 'receipt-row' });
+  const receiptWrap = h('div', null, h('div', { class: 'lbl' }, 'Beleg (optional)'), receiptRow, fileInput);
 
   const errorBox = h('p', { class: 'form-error', role: 'alert', hidden: true });
   const saveBtn = h('button', { type: 'submit', class: 'btn primary block' }, 'Speichern');
@@ -117,17 +186,24 @@ export function openBookingForm(existing = null) {
       h('label', { class: 'lbl', for: 'desc' }, 'Beschreibung (optional)'),
       descInput,
 
-      h('label', { class: 'lbl', for: 'date' }, 'Datum'),
-      dateInput,
+      repeatRow,
+      repeatWrap,
 
-      h('div', { class: 'lbl' }, 'Beleg (optional)'),
-      receiptRow,
-      fileInput,
+      dateLabel,
+      dateInput,
+      dateHint,
+
+      receiptWrap,
+      fromRecInfo,
 
       errorBox,
 
       h('div', { class: 'form-actions' },
         saveBtn,
+        recEdit && nextDate(recurring)
+          ? h('button', { type: 'button', class: 'btn-text', onclick: endRec }, 'Dauerauftrag beenden')
+          : null,
+        recEdit ? h('button', { type: 'button', class: 'btn-text danger', onclick: remove }, 'Dauerauftrag löschen') : null,
         isEdit ? h('button', { type: 'button', class: 'btn-text danger', onclick: remove }, 'Buchung löschen') : null)));
 
   const sheet = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sheet-title' }, form);
@@ -150,8 +226,39 @@ export function openBookingForm(existing = null) {
     typeButtons.expense.setAttribute('aria-pressed', String(st.type === 'expense'));
     typeButtons.income.setAttribute('aria-pressed', String(st.type === 'income'));
     const word = st.type === 'income' ? 'Einnahme' : 'Ausgabe';
-    title.textContent = isEdit ? `${word} bearbeiten` : `Neue ${word}`;
-    descInput.placeholder = st.type === 'income' ? 'z. B. Gehalt November' : 'z. B. Wocheneinkauf';
+    if (recEdit) title.textContent = 'Dauerauftrag bearbeiten';
+    else if (st.repeat) title.textContent = 'Neuer Dauerauftrag';
+    else title.textContent = isEdit ? `${word} bearbeiten` : `Neue ${word}`;
+    descInput.placeholder = st.repeat
+      ? (st.type === 'income' ? 'z. B. Gehalt' : 'z. B. Miete')
+      : (st.type === 'income' ? 'z. B. Gehalt November' : 'z. B. Wocheneinkauf');
+  }
+
+  /** Wiederholen an/aus: Felder, Beschriftungen und Zusammenfassung anpassen */
+  function updateRepeat() {
+    repeatWrap.hidden = !st.repeat;
+    receiptWrap.hidden = st.repeat; // Belege gehören zu einzelnen Buchungen
+    saveBtn.textContent = st.repeat && !recEdit ? 'Dauerauftrag speichern' : 'Speichern';
+    dateLabel.textContent = recEdit ? 'Nächste Zahlung am' : st.repeat ? 'Erste Zahlung am' : 'Datum';
+    dateHint.hidden = !st.repeat;
+    dateHint.textContent = 'Legt auch den Tag fest, an dem jedes Mal gebucht wird.';
+    for (const b of intervalChips.children) b.setAttribute('aria-pressed', String(Number(b.dataset.value) === st.interval));
+    for (const b of endChips.children) b.setAttribute('aria-pressed', String(b.dataset.value === st.endMode));
+    countWrap.hidden = st.endMode !== 'count';
+    if (st.repeat) {
+      const date = dateInput.value;
+      const count = Number(countInput.value);
+      const valid = /^\d{4}-\d{2}-\d{2}$/.test(date);
+      const parts = [];
+      if (valid) parts.push(describeRhythm({ startDate: date, interval: st.interval }));
+      if (st.endMode === 'never') parts.push('unbegrenzt');
+      else if (Number.isInteger(count) && count > 0) {
+        const last = { startDate: date, interval: st.interval };
+        parts.push(`${count} ${count === 1 ? 'Zahlung' : 'Zahlungen'}${valid ? `, letzte am ${formatDate(dueDate(last, count - 1))}` : ''}`);
+      }
+      repeatSummary.textContent = parts.join(' · ');
+    }
+    updateType();
   }
 
   /** Kategorie-Liste füllen und gewählten Wert anzeigen */
@@ -274,6 +381,7 @@ export function openBookingForm(existing = null) {
     if (cents > 100000000) { showError('Der Betrag ist ungewöhnlich hoch. Bitte prüfen.'); return; }
     if (!cat || cat.type !== st.type) { showError('Bitte eine Kategorie wählen.'); return; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput.value)) { showError('Bitte das Datum wählen.'); return; }
+    if (st.repeat) { await saveRepeat(cat, cents); return; }
 
     st.saving = true;
     saveBtn.disabled = true;
@@ -302,7 +410,114 @@ export function openBookingForm(existing = null) {
     }
   }
 
+  /** Dauerauftrag anlegen oder ändern; vergangene Termine auf Wunsch nachtragen */
+  async function saveRepeat(cat, cents) {
+    const startDate = dateInput.value;
+    let limit = null;
+    if (st.endMode === 'count') {
+      limit = Number(countInput.value);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 600) {
+        showError('Bitte die Anzahl der Zahlungen als ganze Zahl eingeben, z. B. 12.');
+        return;
+      }
+    }
+    if (recEdit && recurring.lastDate && startDate <= recurring.lastDate) {
+      showError(`Die nächste Zahlung muss nach der zuletzt gebuchten (${formatDate(recurring.lastDate)}) liegen.`);
+      return;
+    }
+    // Liegt die erste Zahlung in der Vergangenheit? Dann fragen, ob nachgetragen werden soll.
+    const today = todayISO();
+    const past = dueCount({ startDate, interval: st.interval, limit, done: 0 }, shiftDay(today, -1));
+    let skipPast = false;
+    if (past > 0) {
+      const choice = await choiceDialog({
+        title: 'Vergangene Zahlungen nachtragen?',
+        text: `Seit dem ${formatDate(startDate)} wären bis gestern ${past} ${past === 1 ? 'Zahlung' : 'Zahlungen'} fällig gewesen. `
+          + 'Sollen sie als Buchungen nachgetragen werden?',
+        buttons: [
+          { label: past === 1 ? '1 Zahlung nachtragen' : `Alle ${past} nachtragen`, value: 'all', kind: 'primary' },
+          { label: 'Nein, erst ab heute', value: 'skip' },
+          { label: 'Abbrechen' },
+        ],
+      });
+      if (!choice) return;
+      skipPast = choice === 'skip';
+    }
+    st.saving = true;
+    saveBtn.disabled = true;
+    saveBtnTop.disabled = true;
+    try {
+      const { rec, created } = await saveRecurring({
+        id: recurring?.id,
+        type: st.type,
+        amountCents: cents,
+        categoryId: cat.id,
+        description: descInput.value.trim(),
+        startDate,
+        interval: st.interval,
+        limit,
+      }, { skipPast });
+      setLastType(st.type);
+      close();
+      const next = nextDate(rec);
+      const booked = created.length ? `${created.length} ${created.length === 1 ? 'Zahlung' : 'Zahlungen'} gebucht` : null;
+      const upcoming = next ? `nächste am ${formatDate(next)}` : null;
+      toast(`Dauerauftrag ${recEdit ? 'gespeichert' : 'angelegt'}${[booked, upcoming].filter(Boolean).map((x) => ` · ${x}`).join('')}`);
+    } catch (err) {
+      console.error(err);
+      showError(`Speichern hat nicht geklappt: ${err.message || err}`);
+      st.saving = false;
+      saveBtn.disabled = false;
+      saveBtnTop.disabled = false;
+    }
+  }
+
+  /** Dauerauftrag beenden (keine weiteren Zahlungen) */
+  async function endRec() {
+    const ok = await confirmDialog({
+      title: 'Dauerauftrag beenden?',
+      text: 'Es werden keine weiteren Zahlungen gebucht. Bereits gebuchte Zahlungen bleiben erhalten.',
+      confirmLabel: 'Beenden',
+      danger: true,
+    });
+    if (!ok) return;
+    await endRecurring(recurring.id);
+    close();
+    toast('Dauerauftrag beendet');
+  }
+
+  /** Von einer Buchung zu ihrem Dauerauftrag wechseln */
+  async function openRecurringFromBooking() {
+    if (st.dirty) {
+      const ok = await confirmDialog({
+        title: 'Änderungen verwerfen?',
+        text: 'Die Änderungen an dieser Buchung werden nicht gespeichert.',
+        confirmLabel: 'Verwerfen',
+        cancelLabel: 'Weiter bearbeiten',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    close();
+    openBookingForm(null, { recurring: fromRec });
+  }
+
   async function remove() {
+    if (recEdit) {
+      const count = state.bookings.filter((b) => b.recurringId === recurring.id).length;
+      const ok = await confirmDialog({
+        title: 'Dauerauftrag löschen?',
+        text: `„${recurring.description || categoryById(recurring.categoryId)?.name || 'Dauerauftrag'}“ wird gelöscht. `
+          + (count ? `Die ${count} bereits gebuchten ${count === 1 ? 'Zahlung bleibt' : 'Zahlungen bleiben'} erhalten.` : ''),
+        confirmLabel: 'Löschen',
+        danger: true,
+      });
+      if (!ok) return;
+      await deleteRecurring(recurring.id);
+      close();
+      toast('Dauerauftrag gelöscht');
+      return;
+    }
     const label = existing.description || categoryById(existing.categoryId)?.name || 'Buchung';
     const ok = await confirmDialog({
       title: 'Buchung löschen?',
@@ -349,7 +564,7 @@ export function openBookingForm(existing = null) {
 
   // ---------- Start ----------
 
-  updateType();
+  updateRepeat();
   renderCategories();
   renderReceipt();
 
@@ -358,5 +573,5 @@ export function openBookingForm(existing = null) {
   document.addEventListener('keydown', onKey);
 
   // Sofort fokussieren (noch im selben Tipp), damit die Zahlentastatur aufgeht
-  if (!isEdit) amountInput.focus({ preventScroll: true });
+  if (!isEdit && !recEdit) amountInput.focus({ preventScroll: true });
 }

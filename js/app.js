@@ -9,6 +9,8 @@ import * as overview from './views/overview.js';
 import * as finances from './views/finances.js';
 import * as settings from './views/settings.js';
 import * as hours from './views/hours.js';
+import { runRecurring } from './recurring.js';
+import { formatSigned } from './format.js';
 
 const routes = {
   uebersicht: overview,
@@ -61,6 +63,12 @@ async function boot() {
   window.addEventListener('hashchange', () => render());
   onChange(() => render({ keepScroll: true }));
 
+  // Daueraufträge: fällige Zahlungen buchen – jetzt und bei jeder Rückkehr in die App
+  bookDuePayments();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') bookDuePayments();
+  });
+
   // Großer Plus-Button: Formular sofort öffnen (ohne Verzögerung, wegen iPhone-Tastatur)
   document.getElementById('fab').addEventListener('click', () => {
     if (currentRoute().name === 'stunden') hours.openHoursForm();
@@ -76,6 +84,29 @@ async function boot() {
   } catch { /* egal */ }
 
   registerServiceWorker();
+}
+
+// ---------- Daueraufträge ----------
+
+let booking = false;
+
+/** Fällige Zahlungen aus Daueraufträgen buchen und kurz Bescheid geben */
+async function bookDuePayments() {
+  if (booking) return;
+  booking = true;
+  try {
+    const created = await runRecurring();
+    if (created.length === 1) {
+      const b = created[0];
+      toast(`Dauerauftrag gebucht: ${b.description || 'Zahlung'} ${formatSigned(b.amountCents, b.type)}`);
+    } else if (created.length > 1) {
+      toast(`${created.length} Zahlungen aus Daueraufträgen gebucht`);
+    }
+  } catch (err) {
+    console.error('Daueraufträge:', err);
+  } finally {
+    booking = false;
+  }
 }
 
 // ---------- Offline-Modus & Updates ----------

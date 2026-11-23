@@ -11,6 +11,7 @@ import { state, load, emitChange, nowISO, updateLocal } from './data.js';
 import { DEFAULT_SETTINGS } from './defaults.js';
 import { APP_ID, APP_VERSION, BACKUP_FORMAT } from './config.js';
 import { todayISO } from './format.js';
+import { runRecurring } from './recurring.js';
 
 // ---------- Hilfen für Fotos (Binärdaten ↔ Text) ----------
 
@@ -44,6 +45,7 @@ export async function createBackupFile() {
     categories: state.categories,
     bookings: state.bookings,
     hours: state.hours,
+    recurring: state.recurring,
     tombstones,
   };
   // Datei in Teilen zusammensetzen – spart Arbeitsspeicher bei vielen Fotos
@@ -115,6 +117,7 @@ function sanitize(data) {
       categoryId: b.categoryId,
       description: str(b.description),
       receiptId: typeof b.receiptId === 'string' ? b.receiptId : null,
+      ...(typeof b.recurringId === 'string' ? { recurringId: b.recurringId } : {}),
       createdAt: str(b.createdAt) || nowISO(),
       updatedAt: str(b.updatedAt) || str(b.createdAt) || nowISO(),
     });
@@ -147,6 +150,31 @@ function sanitize(data) {
     });
   }
 
+  // Daueraufträge (ab Format 2)
+  const recurring = [];
+  for (const r of arr(data.recurring)) {
+    const ok = r && typeof r.id === 'string' && (r.type === 'income' || r.type === 'expense')
+      && Number.isSafeInteger(r.amountCents) && r.amountCents > 0 && typeof r.categoryId === 'string'
+      && DATE_RE.test(r.startDate) && [1, 3, 6, 12].includes(r.interval)
+      && (r.limit === null || (Number.isSafeInteger(r.limit) && r.limit >= 0))
+      && Number.isSafeInteger(r.done) && r.done >= 0;
+    if (!ok) { skipped++; continue; }
+    recurring.push({
+      id: r.id,
+      type: r.type,
+      amountCents: r.amountCents,
+      categoryId: r.categoryId,
+      description: str(r.description),
+      startDate: r.startDate,
+      interval: r.interval,
+      limit: r.limit,
+      done: r.done,
+      lastDate: DATE_RE.test(r.lastDate) ? r.lastDate : null,
+      createdAt: str(r.createdAt) || nowISO(),
+      updatedAt: str(r.updatedAt) || nowISO(),
+    });
+  }
+
   const receipts = arr(data.receipts).filter((r) => r && typeof r.id === 'string' && typeof r.data === 'string');
   const tombstones = arr(data.tombstones).filter((t) => t && typeof t.id === 'string' && typeof t.deletedAt === 'string');
 
@@ -168,6 +196,8 @@ function sanitize(data) {
     bookings,
     categories,
     hours,
+    recurring,
+    hasRecurring: Array.isArray(data.recurring), // ältere Backups kennen noch keine Daueraufträge
     receipts,
     tombstones,
     settings,
@@ -177,7 +207,7 @@ function sanitize(data) {
 
 // ---------- Import: anwenden ----------
 
-const STORES = ['bookings', 'categories', 'hours', 'receipts', 'tombstones', 'meta'];
+const STORES = ['bookings', 'categories', 'hours', 'recurring', 'receipts', 'tombstones', 'meta'];
 
 export async function applyBackup(backup, mode) {
   // Fotos vorher umwandeln (in der Datenbank-Transaktion darf nicht gewartet werden)
@@ -199,10 +229,11 @@ export async function applyBackup(backup, mode) {
   let result;
   if (mode === 'replace') {
     await db.write(STORES, (s) => {
-      for (const name of ['bookings', 'categories', 'hours', 'receipts', 'tombstones']) s[name].clear();
+      for (const name of ['bookings', 'categories', 'hours', 'recurring', 'receipts', 'tombstones']) s[name].clear();
       for (const b of backup.bookings) s.bookings.put(b);
       for (const c of backup.categories) s.categories.put(c);
       for (const x of backup.hours) s.hours.put(x);
+      for (const r of backup.recurring) s.recurring.put(r);
       for (const r of receipts) s.receipts.put(r);
       for (const t of backup.tombstones) s.tombstones.put(t);
       if (backup.settings) s.meta.put({ key: 'settings', value: backup.settings });
@@ -213,6 +244,7 @@ export async function applyBackup(backup, mode) {
   }
 
   await load();
+  await runRecurring({ silent: true }); // fällige Zahlungen aus Daueraufträgen gleich buchen
   emitChange();
   return { ...result, skipped: backup.skipped };
 }
@@ -255,6 +287,8 @@ async function merge(backup, receipts) {
   const bookings = mergeList(state.bookings, backup.bookings);
   const cats = mergeList(state.categories, backup.categories);
   const hours = mergeList(state.hours, backup.hours);
+  // Ältere Backups ohne Daueraufträge: die auf diesem Gerät bleiben unverändert
+  const recurring = backup.hasRecurring ? mergeList(state.recurring, backup.recurring) : { put: [], del: [] };
 
   // Fotos (ändern sich nie – ein neues Foto bekommt eine neue ID)
   const haveR = new Set(localReceiptIds);
@@ -265,7 +299,7 @@ async function merge(backup, receipts) {
   const takeSettings = backup.settings && (backup.settings.updatedAt || '') > (state.settings.updatedAt || '');
 
   await db.write(STORES, (s) => {
-    for (const [name, plan] of [['bookings', bookings], ['categories', cats], ['hours', hours]]) {
+    for (const [name, plan] of [['bookings', bookings], ['categories', cats], ['hours', hours], ['recurring', recurring]]) {
       for (const x of plan.put) s[name].put(x);
       for (const id of plan.del) s[name].delete(id);
     }

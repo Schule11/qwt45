@@ -51,6 +51,29 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
   (gleich in jedem Monat und Jahr); alle übrigen sind grau als „Weitere“ zusammengefasst. Ein Tipp auf den Ring zeigt in
   der Mitte Name, Betrag und Anteil; die Liste darunter nennt alle Kategorien mit genauen Beträgen.
 
+### Daueraufträge (wiederkehrende Zahlungen)
+
+Für gleichbleibende Zahlungen wie Miete, Krankenversicherung, Abos oder das Gehalt:
+
+1. **+** tippen, Betrag, Kategorie und Beschreibung eingeben und den Schalter **„Wiederholen (Dauerauftrag)“** einschalten
+   (oder *Finanzen → Buchungen → Daueraufträge → Neuer Dauerauftrag*).
+2. **Rhythmus** wählen: monatlich, vierteljährlich, halbjährlich oder jährlich.
+3. **Endet:** *Unbegrenzt* oder *Nach Anzahl Zahlungen* (z. B. 24 – die App zeigt, wann die letzte Zahlung ist).
+4. **Erste Zahlung am:** Dieses Datum legt auch den Tag fest, an dem jedes Mal gebucht wird. Gibt es den Tag in einem
+   Monat nicht (z. B. der 31.), wird am Monatsende gebucht.
+
+So funktioniert es:
+
+- Die App bucht fällige Zahlungen **automatisch beim Öffnen** (ohne Server geht es nicht zu einer festen Uhrzeit).
+  War die App ein paar Tage zu, werden verpasste Termine nachgeholt; ein kurzer Hinweis zeigt, was gebucht wurde.
+- Liegt die erste Zahlung in der Vergangenheit, fragt die App, ob die vergangenen Termine **nachgetragen** werden sollen.
+- Gebuchte Zahlungen sind normale Buchungen (mit kleinem ⟲-Symbol) – du kannst sie einzeln ändern oder löschen;
+  eine gelöschte Zahlung wird nicht noch einmal angelegt.
+- **Ändern** (z. B. Mieterhöhung): *Finanzen → Buchungen → Daueraufträge* → antippen. Die Änderung gilt ab der
+  „nächsten Zahlung“, bereits gebuchte Zahlungen bleiben unverändert. Auch aus einer gebuchten Zahlung kommst du
+  über „Dauerauftrag bearbeiten“ dorthin.
+- **Beenden** stoppt weitere Zahlungen; **Löschen** entfernt den Dauerauftrag – gebuchte Zahlungen bleiben jeweils erhalten.
+
 ## 3. Überstunden
 
 Unten in der Menüleiste auf **Stunden** tippen. Auf diesem Bildschirm erfasst der **+**-Knopf einen Monat
@@ -88,7 +111,7 @@ Deine Daten liegen nur auf dem Handy. Die App erinnert dich regelmäßig an ein 
 
 **Backup erstellen:** *Einstellungen → Backup erstellen → Sichern …* und im Teilen-Menü
 **In Dateien sichern → iCloud Drive** wählen. Die Datei heißt z. B. `haushaltsbuch-backup-2026-11-22.json` und
-enthält alle Buchungen, Überstunden, Kategorien, Einstellungen und Belegfotos.
+enthält alle Buchungen, Daueraufträge, Überstunden, Kategorien, Einstellungen und Belegfotos.
 
 **Backup einspielen** (neues Handy, nach Neuinstallation, am Laptop): *Einstellungen → Backup einspielen*.
 **Zusammenführen** (empfohlen): Neues kommt dazu, nichts wird doppelt, das jeweils Neuere gilt.
@@ -128,16 +151,19 @@ Reines HTML, CSS und JavaScript, ohne Build-Werkzeuge und ohne fremde Bibliothek
 | `js/db.js` | Datenbank im Browser (IndexedDB), Versionen und Umbauten |
 | `js/data.js` | Buchungen, Kategorien, Überstunden, Einstellungen; Beträge immer in **Cent**, Stunden in **Minuten** (ganze Zahlen) |
 | `js/defaults.js` | Vorbelegte Kategorien und Einstellungen |
+| `js/recurring.js` | Daueraufträge: Zeitplan (Tag im Monat, Monatsende, Rhythmus, Anzahl), fällige Zahlungen buchen, ändern, beenden |
 | `js/hours.js` | Überstunden: Rechnen (Stand, Jahre, fehlende Monate), Eingabe lesen (`172,5`/`172:30`), Anzeige |
 | `js/yearReport.js`, `js/exports.js`, `js/pdf.js` | Auswertung je Monat/Jahr, CSV, PDF (auch für Überstunden) |
 | `js/backup.js` | Backup erstellen, prüfen, zusammenführen |
 | `js/notices.js` | Backup-Erinnerung |
-| `js/views/*.js` | Die Bildschirme (`finances.js`: Reiter „Finanzen“ mit Buchungsliste `bookings.js` und Auswertung `report.js`; `hours.js`: Überstunden und Formular „Monat erfassen“; `form.js`: Buchung) |
+| `js/views/*.js` | Die Bildschirme (`finances.js`: Reiter „Finanzen“ mit Buchungsliste `bookings.js` und Auswertung `report.js`; `recurringList.js`: Daueraufträge; `hours.js`: Überstunden und Formular „Monat erfassen“; `form.js`: Buchung und Dauerauftrag) |
 | `js/views/charts.js` | Diagramme (SVG, ohne Bibliothek; Farben in `css/app.css` als `--chart-…`) |
 | `sw.js` | Offline-Modus (Liste aller Dateien) |
 
 Überstunden werden je Monat mit fester ID `h-JJJJ-MM` gespeichert. So entsteht beim Zusammenführen zweier Geräte
-nie ein Monat doppelt – es gilt der zuletzt geänderte.
+nie ein Monat doppelt – es gilt der zuletzt geänderte. Ebenso bekommt jede Zahlung aus einem Dauerauftrag eine feste
+ID aus Dauerauftrag und Datum (`b-<Dauerauftrag>-JJJJ-MM-TT`): Bucht dieselbe Zahlung auf zwei Geräten, ist sie nach
+dem Zusammenführen trotzdem nur einmal da.
 
 ### Getrennt von anderen Apps
 

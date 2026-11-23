@@ -1280,3 +1280,51 @@ dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
 
 .hours-preview .kv { padding: 3px 0; }
 .hours-preview strong { font-variant-numeric: tabular-nums; }
+
+/* ---------- Daueraufträge ---------- */
+
+.rec-entry { margin: -4px 0 14px; }
+.rec-entry span:nth-child(2) { flex: none; }
+.rec-entry-value {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 14.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-entry .chevron { flex: none; margin-left: -2px; }
+
+.rec-row { align-items: center; }
+.rec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.rec-head .row-title { min-width: 0; }
+.rec-head .amt { flex: none; }
+.rec-row .row-sub { white-space: normal; display: block; }
+.rec-row .row-sub + .row-sub { margin-top: 1px; }
+.rec-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-ink);
+}
+.rec-row.ended .rec-icon { background: var(--surface-2); color: var(--muted); }
+.rec-row.ended .row-title, .rec-row.ended .amt { color: var(--muted); }
+.rec-mark { display: inline-flex; color: var(--accent-ink); }
+
+.repeat-wrap .chips .chip { min-height: 42px; padding: 8px 14px; font-size: 16px; }
+/* gewählte Option dezent in Akzentfarbe (nicht rot/grün wie Ausgabe/Einnahme) */
+.repeat-wrap .chips .chip[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.repeat-summary { font-weight: 600; color: var(--text); }
+.rec-link { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.rec-link .icon { color: var(--accent-ink); }

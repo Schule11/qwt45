@@ -7,7 +7,7 @@ import { APP_ID } from './config.js';
 // Eigener Name: Die Datenbank gehört zur Adresse (schule11.github.io), nicht zur App.
 // Mit demselben Namen würden sich zwei Apps dort dieselben Daten teilen.
 const DB_NAME = APP_ID;
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise = null;
 
@@ -24,7 +24,10 @@ function upgrade(db, oldVersion) {
     db.createObjectStore('meta', { keyPath: 'key' });      // Einstellungen u. Ä.
     db.createObjectStore('hours', { keyPath: 'id' });      // Überstunden je Monat
   }
-  // Für spätere Erweiterungen: if (oldVersion < 2) { ... }
+  if (oldVersion < 2) {
+    db.createObjectStore('recurring', { keyPath: 'id' });  // Daueraufträge (wiederkehrende Zahlungen)
+  }
+  // Für spätere Erweiterungen: if (oldVersion < 3) { ... }
 }
 
 export function openDB() {

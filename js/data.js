@@ -12,8 +12,12 @@ import { DEFAULT_SETTINGS, defaultCategoryRecords } from './defaults.js';
  *   id, type: 'income'|'expense', date: 'JJJJ-MM-TT',
  *   amountCents: Integer, categoryId, description,
  *   receiptId: ID des Belegfotos oder null,
+ *   recurringId: ID des Dauerauftrags, aus dem die Buchung entstanden ist (sonst fehlt das Feld),
  *   createdAt, updatedAt
  * }
+ *
+ * Daueraufträge (wiederkehrende Zahlungen) stehen in state.recurring – Aufbau und
+ * Zeitplan siehe recurring.js.
  *
  * Überstunden (ein Eintrag je Monat, feste ID "h-JJJJ-MM" – so entstehen beim
  * Zusammenführen zweier Geräte keine doppelten Monate):
@@ -23,6 +27,7 @@ export const state = {
   bookings: [],
   categories: [],
   hours: [],
+  recurring: [], // Daueraufträge
   settings: { ...DEFAULT_SETTINGS },
   local: {}, // nur für dieses Gerät (z. B. Zeitpunkt des letzten Backups)
 };
@@ -67,10 +72,11 @@ export function replaceInState(list, item) {
 const DATA_VERSION = 1;
 
 export async function load() {
-  let [bookings, categories, hours, meta] = await Promise.all([
+  let [bookings, categories, hours, recurring, meta] = await Promise.all([
     db.getAll('bookings'),
     db.getAll('categories'),
     db.getAll('hours'),
+    db.getAll('recurring'),
     db.getAll('meta'),
   ]);
   const m = Object.fromEntries(meta.map((x) => [x.key, x.value]));
@@ -83,6 +89,7 @@ export async function load() {
   state.bookings = bookings;
   state.categories = categories;
   state.hours = hours;
+  state.recurring = recurring;
   state.settings = { ...DEFAULT_SETTINGS, ...(m.settings || {}) };
   state.local = m.local || {};
 
@@ -128,6 +135,10 @@ export function bookingCount(categoryId) {
   return state.bookings.filter((b) => b.categoryId === categoryId).length;
 }
 
+export function recurringCount(categoryId) {
+  return state.recurring.filter((r) => r.categoryId === categoryId).length;
+}
+
 /** Neue oder geänderte Kategorie speichern */
 export async function saveCategory(input) {
   const existing = input.id ? categoryById(input.id) : null;
@@ -169,14 +180,19 @@ export async function deleteCategory(id, moveToId = null) {
   const moved = state.bookings
     .filter((b) => b.categoryId === id)
     .map((b) => ({ ...b, categoryId: moveToId, updatedAt: now }));
-  if (moved.length && !categoryById(moveToId)) throw new Error('Bitte eine Kategorie wählen, in die die Buchungen verschoben werden.');
-  await db.write(['categories', 'bookings', 'tombstones'], (s) => {
+  const movedRec = state.recurring
+    .filter((r) => r.categoryId === id)
+    .map((r) => ({ ...r, categoryId: moveToId, updatedAt: now }));
+  if ((moved.length || movedRec.length) && !categoryById(moveToId)) throw new Error('Bitte eine Kategorie wählen, in die die Buchungen verschoben werden.');
+  await db.write(['categories', 'bookings', 'recurring', 'tombstones'], (s) => {
     s.categories.delete(id);
     s.tombstones.put({ id, kind: 'category', deletedAt: now });
     for (const b of moved) s.bookings.put(b);
+    for (const r of movedRec) s.recurring.put(r);
   });
   state.categories = state.categories.filter((c) => c.id !== id);
   for (const b of moved) replaceInState(state.bookings, b);
+  for (const r of movedRec) replaceInState(state.recurring, r);
   emitChange();
   return moved.length;
 }

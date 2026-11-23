@@ -33,7 +33,9 @@ export function bookingRow(b) {
   },
   h('div', { class: 'row-main' },
     h('div', { class: 'row-title' }, title),
-    h('div', { class: 'row-sub' }, h('span', { class: 'ell' }, sub.join(' · ')), b.receiptId ? icon('receipt', 16) : null)),
+    h('div', { class: 'row-sub' }, h('span', { class: 'ell' }, sub.join(' · ')),
+      b.recurringId ? h('span', { class: 'rec-mark', title: 'Aus Dauerauftrag' }, icon('repeat', 15)) : null,
+      b.receiptId ? icon('receipt', 16) : null)),
   h('div', { class: `amt ${b.type}` }, formatSigned(b.amountCents, b.type)));
 }
 
