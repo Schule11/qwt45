@@ -70,8 +70,3 @@ export function pickerOption({ label, sub = null, selected = false, onClick, cla
       sub ? h('span', { class: 'picker-option-sub' }, sub) : null),
     selected ? icon('check', 20) : null);
 }
-
-/** Zwischenüberschrift in der Liste */
-export function pickerGroup(text) {
-  return h('div', { class: 'picker-group' }, text);
-}

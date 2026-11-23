@@ -736,16 +736,6 @@ select.field {
 .picker-option-text { display: flex; flex-direction: column; min-width: 0; }
 .picker-option-sub { font-size: 14px; color: var(--muted); font-weight: 400; }
 
-.picker-group {
-  padding: 10px 16px 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-  background: var(--bg);
-  border-top: 1px solid var(--line);
-}
-
-.picker-group:first-child { border-top: 0; }
 
 /* Aktiver Filter als Schild mit ✕ (z. B. "Nur November 2026") */
 .filter-pill {

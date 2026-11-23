@@ -6,7 +6,7 @@ import { h, icon, toast, confirmDialog, choiceDialog, openImageViewer, isTouchDe
 import {
   state, categoriesFor, categoryById, saveBooking, deleteBooking, getReceipt, receiptToBlob, recentCategoryIds,
 } from '../data.js';
-import { disclosurePicker, pickerOption, pickerGroup } from './picker.js';
+import { disclosurePicker, pickerOption } from './picker.js';
 import { parseAmount, centsToInput, todayISO, formatMoney, formatDate } from '../format.js';
 import { prepareReceipt } from '../image.js';
 import { openFile } from '../files.js';
@@ -266,19 +266,15 @@ export function openBookingForm(existing = null, { recurring = null, repeat = fa
     const cats = categoriesFor(st.type);
     const current = categoryById(st.categoryId);
     catPicker.setValue(current && current.type === st.type ? current.name : null);
-    const recentIds = cats.length > 6 ? recentCategoryIds(st.type, 3) : [];
-    const recent = recentIds.map((id) => cats.find((c) => c.id === id)).filter(Boolean);
-    const rest = cats.filter((c) => !recent.includes(c));
-    const option = (c) => pickerOption({
+    // Eine Liste mit allen Kategorien: die zuletzt benutzten stehen oben, der Rest in der gewohnten Reihenfolge
+    const recent = recentCategoryIds(st.type, 3).map((id) => cats.find((c) => c.id === id)).filter(Boolean);
+    const ordered = [...recent, ...cats.filter((c) => !recent.includes(c))];
+    catList.replaceChildren(...ordered.map((c) => pickerOption({
       label: c.name,
       selected: c.id === st.categoryId,
       onClick: () => chooseCategory(c),
       data: { id: c.id },
-    });
-    catList.replaceChildren(
-      ...(recent.length ? [pickerGroup('Zuletzt verwendet'), ...recent.map(option), pickerGroup('Alle Kategorien')] : []),
-      ...rest.map(option),
-    );
+    })));
   }
 
   function chooseCategory(c) {
@@ -287,9 +283,8 @@ export function openBookingForm(existing = null, { recurring = null, repeat = fa
     clearError();
     catPicker.close();
     renderCategories();
-    // Beim Neuanlegen direkt weiter zur Beschreibung
-    if (!isEdit && !descInput.value) descInput.focus();
-    else document.activeElement?.blur();
+    // Tastatur schließen, damit gleich gespeichert werden kann; die Beschreibung ist freiwillig
+    document.activeElement?.blur();
   }
 
   function showError(msg) {

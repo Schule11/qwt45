@@ -45,7 +45,8 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
 - Neue Buchungen starten als **Ausgabe** (das Häufigste im Alltag); die zuletzt gewählte Art merkt sich die App.
 - **Kategorien** sind vorbelegt (z. B. Gehalt, Lebensmittel, Miete & Wohnen) und unter *Einstellungen → Kategorien*
   frei änderbar: umbenennen, sortieren, neue anlegen, löschen (die Buchungen wandern dann in eine andere Kategorie).
-  Im Formular stehen die zuletzt benutzten Kategorien oben.
+  Im Formular stehen die zuletzt benutzten Kategorien in der Liste ganz oben; nach der Auswahl schließt sich die
+  Tastatur, damit du gleich speichern kannst (die Beschreibung ist freiwillig).
 - Ein Tipp auf eine Kategorie (Finanzen → Monat oder Jahr) zeigt alle Buchungen dieser Kategorie im gewählten Monat bzw. Jahr.
 - **Ring „Wohin ging das Geld?“:** Die sechs Kategorien, für die du insgesamt am meisten ausgibst, haben eine feste Farbe
   (gleich in jedem Monat und Jahr); alle übrigen sind grau als „Weitere“ zusammengefasst. Ein Tipp auf den Ring zeigt in
