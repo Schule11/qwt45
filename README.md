@@ -44,13 +44,20 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
 - **Saldo** = Einnahmen minus Ausgaben. Ein Minus zeigt die App rot.
 - Neue Buchungen starten als **Ausgabe** (das Häufigste im Alltag); die zuletzt gewählte Art merkt sich die App.
 - **Kategorien** sind vorbelegt (z. B. Gehalt, Lebensmittel, Miete & Wohnen) und unter *Einstellungen → Kategorien*
-  frei änderbar: umbenennen, sortieren, neue anlegen, löschen (die Buchungen wandern dann in eine andere Kategorie).
+  frei änderbar: umbenennen, Symbol wählen, sortieren, neue anlegen, löschen (die Buchungen wandern dann in eine
+  andere Kategorie).
+- **Symbole:** Jede Kategorie hat ein kleines Symbol im Stil des App-Symbols (weiß auf dem Verlauf Blau → Lila). Es
+  steht in der Kategorie-Auswahl beim Eintragen, vor jeder Buchung, bei den Daueraufträgen und in der Auswertung.
+  Beim Anlegen einer Kategorie schlägt die App ein passendes Symbol zum Namen vor (z. B. „Haustier“ → Pfote,
+  „Tanken“ → Zapfsäule); antippen kannst du jedes der rund 65 Symbole aus der Auswahl darunter. Im Ring
+  „Wohin ging das Geld?“ haben die Symbole die Farbe ihres Ringteils und dienen so zugleich als Legende.
   Im Formular stehen die zuletzt benutzten Kategorien in der Liste ganz oben; nach der Auswahl schließt sich die
   Tastatur, damit du gleich speichern kannst (die Beschreibung ist freiwillig).
 - Ein Tipp auf eine Kategorie (Finanzen → Monat oder Jahr) zeigt alle Buchungen dieser Kategorie im gewählten Monat bzw. Jahr.
 - **Ring „Wohin ging das Geld?“:** Die sechs Kategorien, für die du insgesamt am meisten ausgibst, haben eine feste Farbe
   (gleich in jedem Monat und Jahr); alle übrigen sind grau als „Weitere“ zusammengefasst. Ein Tipp auf den Ring zeigt in
-  der Mitte Name, Betrag und Anteil; die Liste darunter nennt alle Kategorien mit genauen Beträgen.
+  der Mitte Name, Betrag und Anteil; die Liste darunter nennt alle Kategorien mit genauen Beträgen (Symbol in der Farbe
+  des Ringteils).
 
 ### Daueraufträge (wiederkehrende Zahlungen)
 
@@ -175,6 +182,7 @@ Reines HTML, CSS und JavaScript, ohne Build-Werkzeuge und ohne fremde Bibliothek
 | `js/notices.js` | Backup-Erinnerung |
 | `js/views/*.js` | Die Bildschirme (`finances.js`: Reiter „Finanzen“ mit Buchungsliste `bookings.js` und Auswertung `report.js`; `recurringList.js`: Daueraufträge; `hours.js`: Überstunden und Formular „Monat erfassen“; `form.js`: Buchung und Dauerauftrag) |
 | `js/views/charts.js` | Diagramme (SVG, ohne Bibliothek; Farben in `css/app.css` als `--chart-…`) |
+| `js/views/catIcons.js` | Kategorie-Symbole (Linien, Raster 24 × 24), Gruppen der Auswahl, Vorschlag nach Name. Eine Kategorie speichert ihr Symbol in `icon`; fehlt es, gilt das Standard-Symbol aus `js/defaults.js` bzw. ein passendes zum Namen |
 | `sw.js` | Offline-Modus (Liste aller Dateien) |
 | `icons/` | App-Symbol: Geldbörse auf Verlauf Blau → Lila. Vorlage ist `icon.svg`, daraus werden die PNG-Dateien in den Größen 512, 192, 180 und 32 erzeugt |
 

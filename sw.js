@@ -5,7 +5,7 @@
 // Bei jeder Änderung an der App: VERSION erhöhen (und in js/config.js),
 // damit Handys die neuen Dateien laden.
 
-const VERSION = '1.3.1';
+const VERSION = '1.4.0';
 // Eigener Präfix: Alle Apps unter schule11.github.io teilen sich dieselben Caches.
 // Gleiche Namen würden sich gegenseitig überschreiben oder löschen.
 const PREFIX = 'haushaltsbuch-';
@@ -35,6 +35,7 @@ const FILES = [
   'js/yearReport.js',
   'js/views/bookings.js',
   'js/views/categories.js',
+  'js/views/catIcons.js',
   'js/views/charts.js',
   'js/views/components.js',
   'js/views/finances.js',

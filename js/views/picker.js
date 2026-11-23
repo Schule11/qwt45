@@ -6,6 +6,7 @@ import { h, icon } from '../ui.js';
 const openPickers = new Set();
 
 export function disclosurePicker({ id, placeholder, label }) {
+  const leadEl = h('span', { class: 'picker-lead', hidden: true });
   const valueEl = h('span', { class: 'picker-value placeholder' }, placeholder);
   const btn = h('button', {
     type: 'button',
@@ -15,7 +16,7 @@ export function disclosurePicker({ id, placeholder, label }) {
     'aria-controls': `${id}-panel`,
     'aria-label': label,
     onclick: () => (isOpen() ? close() : open()),
-  }, valueEl, h('span', { class: 'picker-chev' }, icon('chevronDown', 20)));
+  }, leadEl, valueEl, h('span', { class: 'picker-chev' }, icon('chevronDown', 20)));
   const panel = h('div', { class: 'picker-panel', id: `${id}-panel`, hidden: true });
   const el = h('div', { class: 'picker', id }, btn, panel);
   const listeners = { open: [], close: [] };
@@ -40,10 +41,12 @@ export function disclosurePicker({ id, placeholder, label }) {
     for (const fn of listeners.close) fn();
   }
 
-  /** Angezeigten Wert setzen (null = Platzhalter) */
-  function setValue(text) {
+  /** Angezeigten Wert setzen (null = Platzhalter); lead: optional ein Element davor (z. B. Symbol) */
+  function setValue(text, lead = null) {
     valueEl.textContent = text || placeholder;
     valueEl.classList.toggle('placeholder', !text);
+    leadEl.replaceChildren(...(text && lead ? [lead] : []));
+    leadEl.hidden = !(text && lead);
   }
 
   const api = {
@@ -55,7 +58,7 @@ export function disclosurePicker({ id, placeholder, label }) {
 }
 
 /** Eine Zeile in der aufgeklappten Liste */
-export function pickerOption({ label, sub = null, selected = false, onClick, className = '', data = {} }) {
+export function pickerOption({ label, sub = null, lead = null, selected = false, onClick, className = '', data = {} }) {
   const attrs = {
     type: 'button',
     class: `picker-option ${className}`.trim(),
@@ -65,6 +68,7 @@ export function pickerOption({ label, sub = null, selected = false, onClick, cla
   };
   for (const [k, v] of Object.entries(data)) attrs[`data-${k}`] = v;
   return h('button', attrs,
+    lead,
     h('span', { class: 'picker-option-text' },
       h('span', { class: 'picker-option-label' }, label),
       sub ? h('span', { class: 'picker-option-sub' }, sub) : null),

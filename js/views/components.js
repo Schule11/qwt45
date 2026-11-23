@@ -1,9 +1,10 @@
 // Wiederverwendbare Bausteine für mehrere Bildschirme.
 
 import { h, icon, toast, alertDialog } from '../ui.js';
-import { categoryName } from '../data.js';
+import { categoryById } from '../data.js';
 import { formatDate, formatSigned, formatMoney, formatBalance } from '../format.js';
 import { openBookingForm } from './form.js';
+import { catTile } from './catIcons.js';
 
 /** Seitenkopf: großer Titel links, oben rechts optionale Knöpfe (actions) und Einstellungen (Zahnrad) */
 export function pageHeader(title, { active = false, actions = [] } = {}) {
@@ -22,7 +23,8 @@ export function pageHeader(title, { active = false, actions = [] } = {}) {
 
 /** Eine Zeile in der Buchungsliste – Tippen öffnet die Buchung zum Bearbeiten. */
 export function bookingRow(b) {
-  const cat = categoryName(b.categoryId);
+  const category = categoryById(b.categoryId);
+  const cat = category?.name || 'Ohne Kategorie';
   const title = b.description || cat;
   const sub = [formatDate(b.date)];
   if (title !== cat) sub.push(cat);
@@ -33,6 +35,7 @@ export function bookingRow(b) {
     'aria-label': `${kind} ${formatMoney(b.amountCents)}, ${title}, ${formatDate(b.date)}. Bearbeiten`,
     onclick: () => openBookingForm(b),
   },
+  catTile(category),
   h('div', { class: 'row-main' },
     h('div', { class: 'row-title' }, title),
     h('div', { class: 'row-sub' }, h('span', { class: 'ell' }, sub.join(' · ')),

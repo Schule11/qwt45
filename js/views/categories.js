@@ -1,9 +1,10 @@
-// Kategorien verwalten: anlegen, umbenennen, sortieren, löschen.
+// Kategorien verwalten: anlegen, umbenennen, Symbol wählen, sortieren, löschen.
 
 import { h, mount, toast, openSheet, choiceDialog, confirmDialog, alertDialog } from '../ui.js';
 import {
   onChange, categoriesFor, bookingCount, recurringCount, saveCategory, moveCategory, deleteCategory,
 } from '../data.js';
+import { ICONS, ICON_GROUPS, FALLBACK_ICON, catTile, categoryIconKey, iconSvg, suggestIcon } from './catIcons.js';
 
 const TYPE_LABEL = { income: 'Einnahmen', expense: 'Ausgaben' };
 
@@ -22,8 +23,10 @@ export function openCategoryList(type, onClose = null) {
       const count = bookingCount(c.id);
       return h('div', { class: 'cat-row' },
         h('button', { type: 'button', class: 'cat-main', onclick: () => openCategoryEditor({ type, category: c }) },
-          h('div', { class: 'row-title' }, c.name),
-          h('div', { class: 'row-sub' }, `${count} ${count === 1 ? 'Buchung' : 'Buchungen'}`)),
+          catTile(c),
+          h('div', { class: 'row-main' },
+            h('div', { class: 'row-title' }, c.name),
+            h('div', { class: 'row-sub' }, `${count} ${count === 1 ? 'Buchung' : 'Buchungen'}`))),
         h('div', { class: 'cat-move' },
           h('button', { type: 'button', class: 'icon-btn', 'aria-label': `${c.name} nach oben`, disabled: i === 0, onclick: () => moveCategory(c.id, -1) }, '↑'),
           h('button', { type: 'button', class: 'icon-btn', 'aria-label': `${c.name} nach unten`, disabled: i === cats.length - 1, onclick: () => moveCategory(c.id, 1) }, '↓')));
@@ -32,7 +35,7 @@ export function openCategoryList(type, onClose = null) {
 
   mount(body,
     h('p', { class: 'hint', style: 'margin: 0 2px 14px' },
-      'Tippe auf eine Kategorie, um sie umzubenennen oder zu löschen. Mit den Pfeilen änderst du die Reihenfolge im '
+      'Tippe auf eine Kategorie, um Namen oder Symbol zu ändern oder sie zu löschen. Mit den Pfeilen änderst du die Reihenfolge im '
       + 'Buchungsformular (die zuletzt benutzten stehen dort zusätzlich vorne).'),
     list,
     h('div', { style: 'margin-top: 16px' },
@@ -45,12 +48,36 @@ export function openCategoryList(type, onClose = null) {
 /** Eine Kategorie bearbeiten oder neu anlegen */
 export function openCategoryEditor({ type, category = null }) {
   const isNew = !category;
+  // Symbol: bei einer neuen Kategorie schlägt die App eins passend zum Namen vor,
+  // bis man selbst eins antippt.
+  let chosen = category ? categoryIconKey(category) : FALLBACK_ICON;
+  let picked = !isNew;
+  const preview = h('span', { class: 'cat-preview' });
   const nameInput = h('input', {
     class: 'field', id: 'cat-name', type: 'text', maxlength: 60, autocomplete: 'off', autocapitalize: 'sentences',
     value: category?.name || '', placeholder: type === 'income' ? 'z. B. Kindergeld' : 'z. B. Haustier',
     enterkeyhint: 'done',
-    onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } },
+    oninput: () => { if (!picked) setIcon(suggestIcon(nameInput.value) || FALLBACK_ICON); },
+    onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); nameInput.blur(); } },
   });
+  const choices = [];
+  const grid = ICON_GROUPS.map((g) => [
+    h('div', { class: 'icon-group' }, g.title),
+    h('div', { class: 'icon-grid', role: 'group', 'aria-label': g.title }, g.keys.map((key) => {
+      const btn = h('button', {
+        type: 'button', class: 'icon-choice', 'data-icon': key, 'aria-label': ICONS[key].label,
+        onclick: () => { picked = true; setIcon(key); },
+      }, iconSvg(key, 24));
+      choices.push(btn);
+      return btn;
+    })),
+  ]);
+
+  function setIcon(key) {
+    chosen = key;
+    preview.replaceChildren(catTile(null, { iconKey: key, size: 'lg' }));
+    for (const b of choices) b.setAttribute('aria-pressed', String(b.dataset.icon === key));
+  }
   const errorBox = h('p', { class: 'form-error', role: 'alert', hidden: true });
 
   const { body, close } = openSheet({
@@ -66,7 +93,7 @@ export function openCategoryEditor({ type, category = null }) {
     const duplicate = categoriesFor(type).some((c) => c.id !== category?.id && c.name.toLocaleLowerCase('de') === name.toLocaleLowerCase('de'));
     if (duplicate) return fail(`Eine Kategorie „${name}“ gibt es bei den ${TYPE_LABEL[type]} schon.`);
     try {
-      await saveCategory({ id: category?.id, type, name });
+      await saveCategory({ id: category?.id, type, name, icon: chosen });
       close();
       toast(isNew ? 'Kategorie angelegt' : 'Kategorie gespeichert');
     } catch (err) {
@@ -121,10 +148,13 @@ export function openCategoryEditor({ type, category = null }) {
     }
   }
 
+  setIcon(chosen);
   mount(body,
     h('label', { class: 'lbl', for: 'cat-name', style: 'margin-top: 4px' }, 'Name'),
-    nameInput,
+    h('div', { class: 'cat-name-row' }, preview, nameInput),
     errorBox,
+    h('div', { class: 'lbl', id: 'cat-icon-label' }, 'Symbol'),
+    h('div', { class: 'icon-picker', role: 'group', 'aria-labelledby': 'cat-icon-label' }, grid),
     h('div', { class: 'form-actions' },
       h('button', { type: 'button', class: 'btn primary block', onclick: save }, 'Speichern'),
       !isNew ? h('button', { type: 'button', class: 'btn-text danger', onclick: remove }, 'Kategorie löschen') : null),

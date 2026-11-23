@@ -130,6 +130,8 @@ function sanitize(data) {
       key: typeof c.key === 'string' ? c.key : null,
       type: c.type,
       name: c.name,
+      // Symbol (ab 1.4.0); unbekannte Namen zeigt die App als passendes Standard-Symbol
+      ...(typeof c.icon === 'string' && /^[a-z][a-zA-Z0-9-]{0,39}$/.test(c.icon) ? { icon: c.icon } : {}),
       order: Number.isFinite(c.order) ? c.order : i,
       updatedAt: str(c.updatedAt) || nowISO(),
     }));

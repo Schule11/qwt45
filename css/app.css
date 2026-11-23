@@ -86,8 +86,6 @@
     --chart-expense: #e0607a;
     --chart-current: #8f87ff;
     --chart-prev: #8a8a90;
-  --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500; --cat-5: #d55181; --cat-6: #0ca30c;
-  --cat-other: #8a8a90;
     --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500; --cat-5: #d55181; --cat-6: #0ca30c;
     --cat-other: #8a8a90;
     --chart-grid: #2a2a2d;
@@ -1019,14 +1017,6 @@ select.field {
 .ring-value { font-size: 22px; font-weight: 750; line-height: 1.15; }
 .ring-label { font-size: 13.5px; color: var(--muted); line-height: 1.25; }
 
-.swatch { flex: none; width: 12px; height: 12px; border-radius: 4px; }
-.swatch[data-slot="1"] { background: var(--cat-1); }
-.swatch[data-slot="2"] { background: var(--cat-2); }
-.swatch[data-slot="3"] { background: var(--cat-3); }
-.swatch[data-slot="4"] { background: var(--cat-4); }
-.swatch[data-slot="5"] { background: var(--cat-5); }
-.swatch[data-slot="6"] { background: var(--cat-6); }
-.swatch[data-slot="0"] { background: var(--cat-other); }
 
 .report-row {
   display: flex;
@@ -1082,6 +1072,9 @@ select.field {
 .cat-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 12px 8px 12px 16px;
   border: 0;
   background: none;
@@ -1327,17 +1320,7 @@ dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
 .rec-head .amt { flex: none; }
 .rec-row .row-sub { white-space: normal; display: block; }
 .rec-row .row-sub + .row-sub { margin-top: 1px; }
-.rec-icon {
-  flex: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent-ink);
-}
-.rec-row.ended .rec-icon { background: var(--surface-2); color: var(--muted); }
+.rec-row.ended .cat-tile { background: var(--surface-2); color: var(--muted); }
 .rec-row.ended .row-title, .rec-row.ended .amt { color: var(--muted); }
 .rec-mark { display: inline-flex; color: var(--accent-ink); }
 
@@ -1351,3 +1334,65 @@ dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.45); }
 .repeat-summary { font-weight: 600; color: var(--text); }
 .rec-link { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .rec-link .icon { color: var(--accent-ink); }
+
+/* ---------- Kategorie-Symbole (wie das App-Symbol: Motiv auf Verlauf Blau → Lila) ---------- */
+
+.cat-tile {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+.cat-tile .icon { display: block; line-height: 0; }
+.cat-tile.sm { width: 30px; height: 30px; border-radius: 9px; }
+.cat-tile.lg { width: 48px; height: 48px; border-radius: 14px; }
+/* Im Kasten "Wohin ging das Geld?": Kachel in der Farbe des Ringteils (zugleich Legende) */
+.cat-tile[data-slot] { color: #ffffff; }
+.cat-tile[data-slot="1"] { background: var(--cat-1); }
+.cat-tile[data-slot="2"] { background: var(--cat-2); }
+.cat-tile[data-slot="3"] { background: var(--cat-3); }
+.cat-tile[data-slot="4"] { background: var(--cat-4); }
+.cat-tile[data-slot="5"] { background: var(--cat-5); }
+.cat-tile[data-slot="6"] { background: var(--cat-6); }
+.cat-tile[data-slot="0"] { background: var(--cat-other); }
+
+/* Auswahlfeld Kategorie: Symbol vor Wert und Optionen */
+.picker-lead { display: flex; flex: none; }
+.picker-lead[hidden] { display: none; }
+.picker-option { justify-content: flex-start; }
+.picker-option .picker-option-text { flex: 1; }
+.picker-option > .icon:last-child { color: var(--type, var(--accent-ink)); }
+
+/* Kategorie bearbeiten: Vorschau neben dem Namen, Symbole im Raster */
+.cat-name-row { display: flex; align-items: center; gap: 12px; }
+.cat-name-row .field { flex: 1; min-width: 0; }
+.cat-preview { display: flex; flex: none; }
+.icon-picker {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px 14px 16px;
+}
+.icon-group { font-size: 13.5px; font-weight: 650; color: var(--muted); margin: 14px 2px 8px; }
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 8px; }
+.icon-choice {
+  aspect-ratio: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 0;
+}
+.icon-choice .icon { display: block; line-height: 0; }
+.icon-choice[aria-pressed="true"] {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+}

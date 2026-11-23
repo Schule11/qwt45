@@ -2,10 +2,11 @@
 // Antippen öffnet den Dauerauftrag zum Ändern, Beenden oder Löschen.
 
 import { h, mount, icon, openSheet } from '../ui.js';
-import { onChange, categoryName } from '../data.js';
+import { onChange, categoryName, categoryById } from '../data.js';
 import { formatSigned } from '../format.js';
 import { recurringSorted, nextDate, describeRhythm, describeStatus } from '../recurring.js';
 import { openBookingForm } from './form.js';
+import { catTile } from './catIcons.js';
 
 export function openRecurringList(onClose = null) {
   const list = h('div');
@@ -22,7 +23,7 @@ export function openRecurringList(onClose = null) {
       class: `row rec-row${ended ? ' ended' : ''}`,
       onclick: () => openBookingForm(null, { recurring: r }),
     },
-    h('span', { class: 'rec-icon' }, icon('repeat', 18)),
+    catTile(categoryById(r.categoryId)),
     h('div', { class: 'row-main' },
       // Titel und Betrag in einer Zeile, darunter Rhythmus und Status in voller Breite
       h('div', { class: 'rec-head' },

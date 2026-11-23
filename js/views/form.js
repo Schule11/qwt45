@@ -7,6 +7,7 @@ import {
   state, categoriesFor, categoryById, saveBooking, deleteBooking, getReceipt, receiptToBlob, recentCategoryIds,
 } from '../data.js';
 import { disclosurePicker, pickerOption } from './picker.js';
+import { catTile } from './catIcons.js';
 import { parseAmount, centsToInput, todayISO, formatMoney, formatDate } from '../format.js';
 import { prepareReceipt } from '../image.js';
 import { openFile } from '../files.js';
@@ -265,12 +266,14 @@ export function openBookingForm(existing = null, { recurring = null, repeat = fa
   function renderCategories() {
     const cats = categoriesFor(st.type);
     const current = categoryById(st.categoryId);
-    catPicker.setValue(current && current.type === st.type ? current.name : null);
+    const shown = current && current.type === st.type ? current : null;
+    catPicker.setValue(shown?.name, shown ? catTile(shown, { size: 'sm' }) : null);
     // Eine Liste mit allen Kategorien: die zuletzt benutzten stehen oben, der Rest in der gewohnten Reihenfolge
     const recent = recentCategoryIds(st.type, 3).map((id) => cats.find((c) => c.id === id)).filter(Boolean);
     const ordered = [...recent, ...cats.filter((c) => !recent.includes(c))];
     catList.replaceChildren(...ordered.map((c) => pickerOption({
       label: c.name,
+      lead: catTile(c, { size: 'sm' }),
       selected: c.id === st.categoryId,
       onClick: () => chooseCategory(c),
       data: { id: c.id },

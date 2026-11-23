@@ -3,7 +3,7 @@
 // Diagrammen und Export (CSV, PDF).
 
 import { h, mount, icon, toast, alertDialog, choiceDialog } from '../ui.js';
-import { state, bookingYears } from '../data.js';
+import { state, bookingYears, categoryById } from '../data.js';
 import { formatMoney, formatSigned, formatBalance, monthLabel, todayISO, MONTHS } from '../format.js';
 import { yearReport, monthReport, categorySlots } from '../yearReport.js';
 import { bookingsCsv, summaryCsv, reportPdf } from '../exports.js';
@@ -11,7 +11,8 @@ import { saveFile, prefersShare } from '../files.js';
 import { shiftMonth } from '../hours.js';
 import { statBlock } from './components.js';
 import { showBookings } from './bookings.js';
-import { monthlyChart, cumulativeChart, shareBar, ringChart, swatch } from './charts.js';
+import { monthlyChart, cumulativeChart, shareBar, ringChart } from './charts.js';
+import { catTile } from './catIcons.js';
 
 // Auswahl bleibt erhalten, solange die App offen ist
 const view = {
@@ -56,7 +57,7 @@ function periodNav({ options, value, label, onChange }) {
     arrow(1, label === 'Monat' ? 'Nächster Monat' : 'Nächstes Jahr', i >= options.length - 1));
 }
 
-/** Ring "Wohin ging das Geld?" mit Liste der Ausgaben-Kategorien (Farbpunkt = Teil im Ring) */
+/** Ring "Wohin ging das Geld?" mit Liste der Ausgaben-Kategorien (Farbe der Symbol-Kachel = Teil im Ring) */
 function expenseCard(r, filter) {
   const list = r.categories.expense;
   const slots = categorySlots('expense');
@@ -65,19 +66,19 @@ function expenseCard(r, filter) {
     h('h2', { class: 'section-title' }, 'Wohin ging das Geld?'),
     h('section', { class: 'card card-list ring-card' },
       ringChart(parts, { caption: 'Ausgaben' }),
-      list.map((c, i) => categoryRow(c, r.totals.expense, filter, { swatchSlot: parts[i].slot }))),
+      list.map((c, i) => categoryRow(c, r.totals.expense, filter, { slot: parts[i].slot }))),
   ];
 }
 
 /** Zeile einer Kategorie (antippen = Buchungen dieser Kategorie zeigen) */
-function categoryRow(c, total, filter, { swatchSlot = null, bar = false } = {}) {
+function categoryRow(c, total, filter, { slot = null, bar = false } = {}) {
   const pct = total > 0 ? Math.round((c.cents / total) * 100) : 0;
   return h('button', {
     type: 'button',
     class: 'report-row report-link',
     onclick: () => showBookings({ ...filter, category: c.id || 'all' }),
   },
-  swatchSlot != null ? swatch(swatchSlot) : null,
+  catTile(categoryById(c.id), { slot }),
   h('div', { class: 'report-main' },
     h('div', { class: 'report-name' }, c.name),
     h('div', { class: 'report-sub' }, `${c.count} ${c.count === 1 ? 'Buchung' : 'Buchungen'} · ${pct} %`),

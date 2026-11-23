@@ -373,11 +373,6 @@ export function ringChart(parts, { caption = 'Ausgaben' } = {}) {
   return wrap;
 }
 
-/** Farbpunkt einer Kategorie (gleiche Farbe wie ihr Teil im Ring) */
-export function swatch(slot) {
-  return h('span', { class: 'swatch', 'data-slot': slot, 'aria-hidden': 'true' });
-}
-
 /** Dünner Anteilsbalken (z. B. Anteil einer Kategorie an allen Einnahmen) */
 export function shareBar(part, total, kind) {
   const pct = total > 0 ? Math.max(1, Math.round((part / total) * 100)) : 0;
