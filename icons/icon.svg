@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- App-Symbol Haushaltsbuch: Geldbörse, weiß auf Verlauf Blau → Lila. Quelle für die PNG-Dateien. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f6fef"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(-4 0)" fill="none" stroke="#fff" stroke-width="34" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M140 190 V350 a30 30 0 0 0 30 30 H360 a20 20 0 0 0 20 -20 V210 a20 20 0 0 0 -20 -20 H170 a30 30 0 0 1 0 -60 H330 v60"/>
+    <path d="M380 252 H322 a33 33 0 0 0 0 66 H380"/>
+  </g>
+</svg>

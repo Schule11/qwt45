@@ -138,6 +138,9 @@ Neue Versionen werden in dieses GitHub-Repository hochgeladen. Die App holt sie 
 von selbst und zeigt kurz „App aktualisiert“ an. Deine Daten bleiben dabei erhalten.
 Falls nichts passiert: die App im App-Umschalter wegwischen und neu öffnen.
 
+Ein **neues App-Symbol** übernimmt das iPhone nicht von selbst: Dafür die App einmal über Safari neu zum
+Home-Bildschirm hinzufügen (vorher ein Backup machen, falls das alte Symbol gelöscht werden soll).
+
 ## 6. Am Laptop lokal starten (optional)
 
 Nur nötig, wenn du am Code etwas ausprobieren willst. Im Terminal im Projektordner:
@@ -172,6 +175,7 @@ Reines HTML, CSS und JavaScript, ohne Build-Werkzeuge und ohne fremde Bibliothek
 | `js/views/*.js` | Die Bildschirme (`finances.js`: Reiter „Finanzen“ mit Buchungsliste `bookings.js` und Auswertung `report.js`; `recurringList.js`: Daueraufträge; `hours.js`: Überstunden und Formular „Monat erfassen“; `form.js`: Buchung und Dauerauftrag) |
 | `js/views/charts.js` | Diagramme (SVG, ohne Bibliothek; Farben in `css/app.css` als `--chart-…`) |
 | `sw.js` | Offline-Modus (Liste aller Dateien) |
+| `icons/` | App-Symbol: Geldbörse auf Verlauf Blau → Lila. Vorlage ist `icon.svg`, daraus werden die PNG-Dateien in den Größen 512, 192, 180 und 32 erzeugt |
 
 Überstunden werden je Monat mit fester ID `h-JJJJ-MM` gespeichert. So entsteht beim Zusammenführen zweier Geräte
 nie ein Monat doppelt – es gilt der zuletzt geänderte. Ebenso bekommt jede Zahlung aus einem Dauerauftrag eine feste
