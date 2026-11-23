@@ -5,17 +5,19 @@ import { categoryName } from '../data.js';
 import { formatDate, formatSigned, formatMoney, formatBalance } from '../format.js';
 import { openBookingForm } from './form.js';
 
-/** Seitenkopf: großer Titel links, Einstellungen (Zahnrad) oben rechts */
-export function pageHeader(title, { active = false } = {}) {
+/** Seitenkopf: großer Titel links, oben rechts optionale Knöpfe (actions) und Einstellungen (Zahnrad) */
+export function pageHeader(title, { active = false, actions = [] } = {}) {
   return h('div', { class: 'page-head' },
     h('h1', { class: 'page-title' }, title),
-    h('a', {
-      href: '#/einstellungen',
-      class: 'round-btn settings-btn',
-      'data-route': 'einstellungen',
-      'aria-label': 'Einstellungen',
-      'aria-current': active ? 'page' : null,
-    }, icon('gear', 23)));
+    h('div', { class: 'head-actions' },
+      actions,
+      h('a', {
+        href: '#/einstellungen',
+        class: 'round-btn settings-btn',
+        'data-route': 'einstellungen',
+        'aria-label': 'Einstellungen',
+        'aria-current': active ? 'page' : null,
+      }, icon('gear', 23))));
 }
 
 /** Eine Zeile in der Buchungsliste – Tippen öffnet die Buchung zum Bearbeiten. */

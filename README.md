@@ -38,7 +38,7 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
 | **+ (runder Knopf neben der Menüleiste)** | Neue Buchung: Ausgabe oder Einnahme, Betrag, Kategorie, Beschreibung, Datum, Beleg (Foto oder PDF, optional). Oben rechts ✓ speichert, ✕ bricht ab. |
 | **Übersicht** | Einnahmen, Ausgaben und Saldo für den aktuellen Monat und das gewählte Jahr, dazu dein Überstunden-Stand und die zuletzt erfassten Buchungen |
 | **Menüleiste unten** | Drei Reiter: Übersicht, Finanzen, Stunden – daneben der **+**-Knopf |
-| **Finanzen** | Oben der Umschalter **Buchungen \| Monat \| Jahr**. *Buchungen:* alle Buchungen nach Monaten (mit Saldo je Monat); Suche, Filter-Chips (Alle/Einnahmen/Ausgaben), Jahr und Kategorie – mit Filter erscheint die Summe der Treffer; antippen zum Bearbeiten oder Löschen. *Monat:* mit ‹ › blättern (ein Tipp auf den Monatsnamen springt direkt), Ergebnis, Ring **„Wohin ging das Geld?“** mit den Ausgaben-Kategorien, Einnahmen nach Kategorie. *Jahr:* Ergebnis mit **Exportieren** (PDF, CSV), Diagramm umschaltbar „Je Monat“/„Saldo im Verlauf“ (mit Vorjahr), Liste der Monate (antippen öffnet den Monat), Ring und Kategorien |
+| **Finanzen** | Oben der Umschalter **Buchungen \| Monat \| Jahr**. *Buchungen:* alle Buchungen nach Monaten (mit Saldo je Monat). Oben die **Suche** und daneben der **Filter-Knopf** (Art, Zeitraum, Kategorie); aktive Filter stehen als kleine Schilder unter der Suche und lassen sich dort mit ✕ entfernen, der Knopf zeigt ihre Anzahl. Mit Suche oder Filter erscheint die Summe der Treffer. Antippen zum Bearbeiten oder Löschen. Oben rechts (⟲) die **Daueraufträge**. *Monat:* mit ‹ › blättern (ein Tipp auf den Monatsnamen springt direkt), Ergebnis, Ring **„Wohin ging das Geld?“** mit den Ausgaben-Kategorien, Einnahmen nach Kategorie. *Jahr:* Ergebnis mit **Exportieren** (PDF, CSV), Diagramm umschaltbar „Je Monat“/„Saldo im Verlauf“ (mit Vorjahr), Liste der Monate (antippen öffnet den Monat), Ring und Kategorien |
 | **Einstellungen** (Zahnrad oben rechts) | Kategorien, Überstunden (Übertrag, Anzeige), Backup, hell/dunkel |
 
 - **Saldo** = Einnahmen minus Ausgaben. Ein Minus zeigt die App rot.
@@ -57,7 +57,7 @@ Eine kleine App für den eigenen Haushalt mit zwei Aufgaben:
 Für gleichbleibende Zahlungen wie Miete, Krankenversicherung, Abos oder das Gehalt:
 
 1. **+** tippen, Betrag, Kategorie und Beschreibung eingeben und den Schalter **„Wiederholen (Dauerauftrag)“** einschalten
-   (oder *Finanzen → Buchungen → Daueraufträge → Neuer Dauerauftrag*).
+   (oder *Finanzen* → oben rechts ⟲ *Daueraufträge* → *Neuer Dauerauftrag*).
 2. **Rhythmus** wählen: monatlich, vierteljährlich, halbjährlich oder jährlich.
 3. **Endet:** *Unbegrenzt* oder *Nach Anzahl Zahlungen* (z. B. 24 – die App zeigt, wann die letzte Zahlung ist).
 4. **Erste Zahlung am:** Dieses Datum legt auch den Tag fest, an dem jedes Mal gebucht wird. Gibt es den Tag in einem
@@ -70,7 +70,7 @@ So funktioniert es:
 - Liegt die erste Zahlung in der Vergangenheit, fragt die App, ob die vergangenen Termine **nachgetragen** werden sollen.
 - Gebuchte Zahlungen sind normale Buchungen (mit kleinem ⟲-Symbol) – du kannst sie einzeln ändern oder löschen;
   eine gelöschte Zahlung wird nicht noch einmal angelegt.
-- **Ändern** (z. B. Mieterhöhung): *Finanzen → Buchungen → Daueraufträge* → antippen. Die Änderung gilt ab der
+- **Ändern** (z. B. Mieterhöhung): *Finanzen* → oben rechts ⟲ *Daueraufträge* → antippen. Die Änderung gilt ab der
   „nächsten Zahlung“, bereits gebuchte Zahlungen bleiben unverändert. Auch aus einer gebuchten Zahlung kommst du
   über „Dauerauftrag bearbeiten“ dorthin.
 - **Beenden** stoppt weitere Zahlungen; **Löschen** entfernt den Dauerauftrag – gebuchte Zahlungen bleiben jeweils erhalten.

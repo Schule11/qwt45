@@ -4,10 +4,11 @@
 // auf eine Kategorie in die gefilterte Liste und ein Monat der Jahrestabelle in
 // die Monatsansicht.
 
-import { h, mount } from '../ui.js';
+import { h, mount, icon } from '../ui.js';
 import { pageHeader } from './components.js';
 import { renderList } from './bookings.js';
 import { renderMonth, renderYear } from './report.js';
+import { openRecurringList } from './recurringList.js';
 
 const MODES = [
   ['buchungen', 'Buchungen'],
@@ -31,7 +32,13 @@ export function render(root, sub = null) {
       onclick: () => { if (key !== mode) location.hash = `#/finanzen/${key}`; },
     }, label)));
 
-  mount(root, pageHeader('Finanzen'), switcher);
+  // Daueraufträge: kleiner Knopf oben rechts (neben den Einstellungen)
+  const recBtn = h('button', {
+    type: 'button', class: 'round-btn', id: 'rec-open', 'aria-label': 'Daueraufträge', title: 'Daueraufträge',
+    onclick: () => openRecurringList(),
+  }, icon('repeat', 22));
+
+  mount(root, pageHeader('Finanzen', { actions: [recBtn] }), switcher);
   if (mode === 'buchungen') renderList(root);
   else if (mode === 'monat') renderMonth(root, rerender);
   else renderYear(root, rerender);

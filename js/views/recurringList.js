@@ -2,18 +2,10 @@
 // Antippen öffnet den Dauerauftrag zum Ändern, Beenden oder Löschen.
 
 import { h, mount, icon, openSheet } from '../ui.js';
-import { state, onChange, categoryName } from '../data.js';
-import { formatSigned, formatDate } from '../format.js';
+import { onChange, categoryName } from '../data.js';
+import { formatSigned } from '../format.js';
 import { recurringSorted, nextDate, describeRhythm, describeStatus } from '../recurring.js';
 import { openBookingForm } from './form.js';
-
-/** Kurzinfo für die Zeile in der Buchungsliste: "3 aktiv · nächste 01.12.2026" */
-export function recurringSummary() {
-  const active = state.recurring.filter((r) => nextDate(r));
-  if (!active.length) return state.recurring.length ? 'keine aktiven' : 'z. B. Miete, Abos';
-  const next = active.map(nextDate).sort()[0];
-  return `${active.length} aktiv · nächste ${formatDate(next).slice(0, 6)}`; // Datum ohne Jahr, z. B. 25.11.
-}
 
 export function openRecurringList(onClose = null) {
   const list = h('div');
