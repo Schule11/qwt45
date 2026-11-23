@@ -138,8 +138,9 @@ Neue Versionen werden in dieses GitHub-Repository hochgeladen. Die App holt sie 
 von selbst und zeigt kurz „App aktualisiert“ an. Deine Daten bleiben dabei erhalten.
 Falls nichts passiert: die App im App-Umschalter wegwischen und neu öffnen.
 
-Ein **neues App-Symbol** übernimmt das iPhone nicht von selbst: Dafür die App einmal über Safari neu zum
-Home-Bildschirm hinzufügen (vorher ein Backup machen, falls das alte Symbol gelöscht werden soll).
+Ein **neues App-Symbol** übernimmt das iPhone nicht von selbst: Zuerst in der alten App ein Backup machen, dann
+die App über Safari neu zum Home-Bildschirm hinzufügen. Fehlen in der neuen App die Daten, das Backup dort
+einspielen. Erst danach das alte Symbol löschen, denn mit dem Symbol löscht das iPhone auch dessen Daten.
 
 ## 6. Am Laptop lokal starten (optional)
 
